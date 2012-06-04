@@ -3,7 +3,7 @@
 
 #include <QtGui/QMainWindow>
 
-class RenderWidget;
+class GLRenderWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -14,7 +14,7 @@ public:
     ~MainWindow();
 
 private:
-    RenderWidget* m_renderWidget;
+    GLRenderWidget* m_renderWidget;
 
 };
 

@@ -1,11 +1,16 @@
 #include "mainwindow.hpp"
-#include "RenderWidget.hpp"
+#include "GLRenderWidget.hpp"
+
+#include <QGLFormat>
 
 MainWindow::MainWindow( QWidget *parent )
     : QMainWindow( parent )
-{
-  m_renderWidget = new RenderWidget( this );
-  m_renderWidget->showFPS( false );
+{  
+  QGLFormat glFormat;
+  glFormat.setProfile( QGLFormat::CoreProfile );
+  glFormat.setSampleBuffers( true );
+
+  m_renderWidget = new GLRenderWidget( glFormat, this );
   setCentralWidget( m_renderWidget );
 }
 
