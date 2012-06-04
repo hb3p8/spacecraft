@@ -1,8 +1,6 @@
-#include <GL/glew.h>
 #include <QAction>
 #include <QKeyEvent>
 #include <QColorDialog>
-#include <glog/logging.h>
 
 #include "BaseRenderWidget.hpp"
 
@@ -48,12 +46,6 @@ void BaseRenderWidget::initializeGL()
 {
   setMinimumSize( defaultXSize, defaultYSize );
   
-  GLenum err = glewInit();
-  if ( err != GLEW_OK )
-  {
-    LOG( ERROR ) << "Error: " << glewGetErrorString( err ) << "\n";
-  }
- 
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity();
 
