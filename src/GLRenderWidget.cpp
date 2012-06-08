@@ -7,6 +7,7 @@
 #include <QImage>
 
 #include <memory>
+#include <math.h>
 
 using namespace Eigen;
 
@@ -83,6 +84,28 @@ const uint32_t cubeIndices[cubeIndicesCount] = {
 };
 
 GLuint texture;
+
+bool rayBoxIntersection( Vector3f rayStart, Vector3f rayDir, Vector3f boxMin, Vector3f boxMax, float* time )
+{
+  Vector3f Max;
+  Vector3f Min;
+  const float eps = 1e-6;
+
+  for( size_t i = 0; i < 3; i++ )
+  {
+    boxMin[ i ] = ( boxMin[ i ] - rayStart[ i ] ) / ( rayDir[ i ] + eps );
+    boxMax[ i ] = ( boxMax[ i ] - rayStart[ i ] ) / ( rayDir[ i ] + eps );
+
+    Max[ i ] = fmax( boxMax[ i ], boxMin[ i ] );
+    Min[ i ] = fmin( boxMax[ i ], boxMin[ i ] );
+  }
+
+  Max.x() = fmin( Max.x(), fmin( Max.y(), Max.z() ) );
+  Min.x() = fmax( Min.x(), fmax( Min.y(), Min.z() ) );
+
+  return Max.x() > ( *time = fmax( Min.x(), 0.0 ) );
+
+}
 
 void GLRenderWidget::initializeGL()
 {
@@ -221,12 +244,34 @@ void GLRenderWidget::applyInput()
 
 void GLRenderWidget::paintGL()
 {
+    float iTime, val = 0.0;
+
+    QVector3D rayPos( m_camera->position().x(),
+                      m_camera->position().y(),
+                      m_camera->position().z() );
+
+    QVector3D rayDir( m_camera->view().x(),
+                      m_camera->view().y(),
+                      m_camera->view().z() );
+
+
+    if( rayBoxIntersection( Vector3f( rayPos.x(), rayPos.y(), rayPos.z() ),
+                            Vector3f( rayDir.x(), rayDir.y(), rayDir.z() ),
+                            Vector3f( -1.0, -1.0, -1.0 ),
+                            Vector3f( 1.0, 1.0, 1.0 ),
+                            &iTime )
+    ) val = 0.5;
+
+    QVector3D point = rayPos + rayDir * iTime;
+
+
     applyInput();
 
     // Clear the buffer with the current clearing color
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    QMatrix4x4 matrix( m_camera->viewProjectionMatrix() );
+    QMatrix4x4 matrix( m_camera->projectionMatrix() );
+    matrix = matrix * m_camera->viewMatrix();
 
     m_shader.bind();
 
@@ -243,7 +288,8 @@ void GLRenderWidget::paintGL()
     glBindTexture( GL_TEXTURE_2D, texture );
 
     m_shader.setUniformValue( "modelViewProjectionMatrix", matrix );
-    m_shader.setUniformValue( "baseColor", QVector4D( 0.5, 0.0, 0.0, 0.0 ) );
+    m_shader.setUniformValue( "baseColor", QVector4D( val, 0.0, 0.0, 0.0 ) );
+    m_shader.setUniformValue( "point", point );
     glDrawElements( GL_TRIANGLES, cubeIndicesCount, GL_UNSIGNED_INT, NULL );
 
     matrix.translate( 3.0, 0.0, 3.0 );
@@ -265,6 +311,10 @@ void GLRenderWidget::paintGL()
     m_text.add( "CAMERA\t", m_camera->position() );
     m_text.add( "FPS\t", m_fps );
     m_text.draw( this, 10, 15 );
+    m_text.clear();
+
+    m_text.add("+");
+    m_text.draw( this, 400, 300 );
     m_text.clear();
 
     nextFrame();
