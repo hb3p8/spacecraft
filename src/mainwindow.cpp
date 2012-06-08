@@ -12,6 +12,8 @@ MainWindow::MainWindow( QWidget *parent )
 
   m_renderWidget = new GLRenderWidget( glFormat, this );
   setCentralWidget( m_renderWidget );
+
+  m_renderWidget->setFocus();
 }
 
 MainWindow::~MainWindow()

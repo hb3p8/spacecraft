@@ -6,14 +6,20 @@
 #include <QGLShaderProgram>
 #include <QTime>
 #include <QTimer>
+#include <QPoint>
+#include <QMap>
 
 #include "TextRender.hpp"
+#include "Camera.hpp"
+
+typedef QMap< Qt::Key, bool > InputMap;
 
 class GLRenderWidget : public QGLWidget
 {
     Q_OBJECT
 public:
     GLRenderWidget( const QGLFormat& format, QWidget* parent = 0 );
+    ~GLRenderWidget();
 
 protected:
     virtual void initializeGL();
@@ -21,6 +27,14 @@ protected:
     virtual void paintGL();
 
     virtual void keyPressEvent( QKeyEvent* e );
+    virtual void keyReleaseEvent( QKeyEvent* e );
+    virtual void mouseMoveEvent( QMouseEvent* e );
+    virtual void mousePressEvent( QMouseEvent* e );
+    virtual void wheelEvent( QWheelEvent* e );
+
+private slots:
+    void applyInput();
+
 
 private:
     bool prepareShaderProgram( const QString& vertexShaderPath,
@@ -47,6 +61,11 @@ private:
     QTime* m_fpsTime;
 
     TextRender m_text;
+
+    CameraPtr m_camera;
+    QPoint m_lastMousePos;
+
+    InputMap m_inputMap;
 
 };
 

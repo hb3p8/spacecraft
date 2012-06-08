@@ -5,7 +5,7 @@
 macro( configure_compiler ${USE_RELEASE} ${USE_DEBUG} )
 
 if( CMAKE_COMPILER_IS_GNUCXX )
-  add_definitions( -march=native -Wall -Wwrite-strings -Wno-long-long -Werror )
+  add_definitions( -std=c++0x -march=native -Wall -Wwrite-strings -Wno-long-long -Werror )
 
 endif()
 if( ${USE_RELEASE} )

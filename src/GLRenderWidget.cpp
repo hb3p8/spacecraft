@@ -6,6 +6,10 @@
 #include <QMatrix>
 #include <QImage>
 
+#include <memory>
+
+using namespace Eigen;
+
 
 GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent ) :
     QGLWidget( format, parent ),
@@ -21,6 +25,13 @@ GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent ) :
     m_text( "LMMonoCaps10", 10, Qt::green )
 {
   setMinimumSize( defaultXSize, defaultYSize );
+
+  m_camera = CameraPtr( new Camera() );
+}
+
+GLRenderWidget::~GLRenderWidget()
+{
+
 }
 
 // количество вершин куба
@@ -36,6 +47,16 @@ const float cubePositions[cubeVerticesCount][3] = {
         { s,-s,-s}, {-s,-s,-s}, {-s,-s, s}, { s,-s, s}, // bottom
         {-s, s,-s}, {-s, s, s}, {-s,-s, s}, {-s,-s,-s}, // left
         { s, s, s}, { s, s,-s}, { s,-s,-s}, { s,-s, s}  // right
+};
+
+// cube normals
+const float cubeNormals[cubeVerticesCount][3] = {
+        { 0, 0,-s}, { 0, 0,-s}, { 0, 0,-s}, { 0, 0,-s}, // front
+        { 0, 0, s}, { 0, 0, s}, { 0, 0, s}, { 0, 0, s}, // back
+        { 0, s, 0}, { 0, s, 0}, { 0, s, 0}, { 0, s, 0}, // top
+        { 0,-s, 0}, { 0,-s, 0}, { 0,-s, 0}, { 0,-s, 0}, // bottom
+        { s, 0, 0}, { s, 0, 0}, { s, 0, 0}, { s, 0, 0}, // left
+        {-s, 0, 0}, {-s, 0, 0}, {-s, 0, 0}, {-s, 0, 0}  // right
 };
 
 // текстурные координаты куба
@@ -80,12 +101,8 @@ void GLRenderWidget::initializeGL()
     m_timer->start( 10 );
     connect( m_timer, SIGNAL( timeout() ), this, SLOT( updateGL() ) );
 
-    QImage texImage( "images/grass_top.jpg" );
+    QImage texImage( "images/default.png" );
     texture = bindTexture( texImage );
-/*
-    float points[] = { -0.5f, -0.5f, 0.0f,
-                            0.5f, -0.5f, 0.0f,
-                            0.0f,  0.5f, 0.0f };*/
 
     // vertex positions
     m_vertexBuffer.create();
@@ -145,6 +162,8 @@ void GLRenderWidget::initializeGL()
     m_workTime->start();
 
     glEnable( GL_DEPTH_TEST );
+
+    m_camera->setPosition( Eigen::Vector3f( 0.0, 0.0, -6.0 ) );
 }
 
 bool GLRenderWidget::prepareShaderProgram( const QString& vertexShaderPath,
@@ -174,24 +193,43 @@ void GLRenderWidget::resizeGL( int w, int h )
     glViewport( 0, 0, w, qMax( h, 1 ) );
 }
 
+void GLRenderWidget::applyInput()
+{
+  Vector3f delta( 0.0F, 0.0F, 0.0F );
+  float step = 2.2;
+
+  InputMap::const_iterator i;
+
+  i = m_inputMap.find( Qt::Key_W );
+  if( i != m_inputMap.end() && i.value() == true )
+    delta[ 2 ] += 0.1 * step;
+
+  i = m_inputMap.find( Qt::Key_S );
+  if( i != m_inputMap.end() && i.value() == true )
+    delta[ 2 ] -= 0.1 * step;
+
+  i = m_inputMap.find( Qt::Key_A );
+  if( i != m_inputMap.end() && i.value() == true )
+    delta[ 0 ] += 0.1 * step;
+
+  i = m_inputMap.find( Qt::Key_D );
+  if( i != m_inputMap.end() && i.value() == true )
+    delta[ 0 ] -= 0.1 * step;
+
+  m_camera->translate( delta );
+}
+
 void GLRenderWidget::paintGL()
 {
+    applyInput();
+
     // Clear the buffer with the current clearing color
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    QMatrix4x4 matrix;
-    matrix.setToIdentity();
-    const float aspectRatio = (float)width() / (float)height();
-    matrix.perspective( 45.0f, aspectRatio, 1.0f, 100.0f );
-    matrix.translate( 0.0f, 0.0f, -4.0f );
-    matrix.rotate( 30.0f, 0.0f, 1.0f, 0.0f );
+    QMatrix4x4 matrix( m_camera->viewProjectionMatrix() );
 
-
-
-    glBindTexture( GL_TEXTURE_2D, texture );
     m_shader.bind();
 
-    m_shader.setUniformValue( "modelViewProjectionMatrix", matrix );
     m_shader.setUniformValue( "colorTexture", 0 );
 
     m_vertexBuffer.bind();
@@ -201,8 +239,19 @@ void GLRenderWidget::paintGL()
     m_shader.enableAttributeArray( "texcoord" );
 
     // Draw stuff
-  //  glDrawArrays( GL_TRIANGLES, 0, 10 );
+
+    glBindTexture( GL_TEXTURE_2D, texture );
+
+    m_shader.setUniformValue( "modelViewProjectionMatrix", matrix );
+    m_shader.setUniformValue( "baseColor", QVector4D( 0.5, 0.0, 0.0, 0.0 ) );
     glDrawElements( GL_TRIANGLES, cubeIndicesCount, GL_UNSIGNED_INT, NULL );
+
+    matrix.translate( 3.0, 0.0, 3.0 );
+    m_shader.setUniformValue( "modelViewProjectionMatrix", matrix );
+    m_shader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
+    glDrawElements( GL_TRIANGLES, cubeIndicesCount, GL_UNSIGNED_INT, NULL );
+
+    glBindTexture( GL_TEXTURE_2D, 0 );
 
     m_shader.disableAttributeArray( "position" );
     m_shader.disableAttributeArray( "texcoord" );
@@ -210,9 +259,10 @@ void GLRenderWidget::paintGL()
     m_texcoordBuffer.release();
     m_indexBuffer.release();
     m_shader.release();
-    glBindTexture( GL_TEXTURE_2D, 0 );
 
 
+
+    m_text.add( "CAMERA\t", m_camera->position() );
     m_text.add( "FPS\t", m_fps );
     m_text.draw( this, 10, 15 );
     m_text.clear();
@@ -227,10 +277,86 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
         case Qt::Key_Escape:
             QCoreApplication::instance()->quit();
             break;
+        case Qt::Key_W:
+        {
+          m_inputMap.insert( Qt::Key_W, true );
+        }break;
+        case Qt::Key_S:
+        {
+          m_inputMap.insert( Qt::Key_S, true );
+        }break;
+        case Qt::Key_A:
+        {
+          m_inputMap.insert( Qt::Key_A, true );
+        }break;
+        case Qt::Key_D:
+        {
+          m_inputMap.insert( Qt::Key_D, true );
+        }break;
+  /*      case Qt::Key_Q:
+        {
+          m_camera->rotate( AngleAxisf( 0.0, 0.0, -5.0 / 360 * M_PI ));
+          return;
+        }break;
+        case Qt::Key_E:
+        {
+          m_camera->rotate( Vector3f( 0.0, 0.0, 5.0 / 360 * M_PI ));
+          return;
+        }break;*/
 
         default:
             QGLWidget::keyPressEvent( e );
     }
+}
+
+void GLRenderWidget::keyReleaseEvent( QKeyEvent* e )
+{
+  switch ( e->key() )
+  {
+    case Qt::Key_W:
+    {
+      m_inputMap.insert( Qt::Key_W, false );
+    }break;
+    case Qt::Key_S:
+    {
+      m_inputMap.insert( Qt::Key_S, false );
+    }break;
+    case Qt::Key_A:
+    {
+      m_inputMap.insert( Qt::Key_A, false );
+    }break;
+    case Qt::Key_D:
+    {
+      m_inputMap.insert( Qt::Key_D, false );
+    }break;
+
+    default:
+        QGLWidget::keyReleaseEvent( e );
+  }
+}
+
+void GLRenderWidget::wheelEvent( QWheelEvent* event )
+{
+  m_camera->translate( Vector3f( 0.0, 0.0, static_cast< GLfloat >( event->delta() ) * 1.0 / 100 ) );
+}
+
+void GLRenderWidget::mousePressEvent( QMouseEvent* event )
+{
+  m_lastMousePos = event->pos();
+}
+
+void GLRenderWidget::mouseMoveEvent( QMouseEvent* event )
+{
+  GLfloat dx = static_cast< GLfloat >( event->pos().x() - m_lastMousePos.x() ) / width () / 2 * M_PI;
+  GLfloat dy = static_cast< GLfloat >( event->pos().y() - m_lastMousePos.y() ) / height() / 2 * M_PI;
+
+  if( ( event->buttons() & Qt::LeftButton ) | ( event->buttons() & Qt::RightButton ) )
+  {
+    m_camera->rotate( AngleAxisf( -dx, Vector3f( 0.0, 1.0, 0.0 ) ) );
+    m_camera->rotate( AngleAxisf(  dy, Vector3f( 1.0, 0.0, 0.0 ) ) );
+  }
+
+  m_lastMousePos = event->pos();
 }
 
 void GLRenderWidget::nextFrame()
