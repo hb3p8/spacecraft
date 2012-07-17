@@ -37,9 +37,6 @@ private slots:
 
 
 private:
-    bool prepareShaderProgram( const QString& vertexShaderPath,
-                               const QString& fragmentShaderPath );
-
     void nextFrame();
 
     static const int defaultXSize = 800;
@@ -47,6 +44,7 @@ private:
 
     QGLShaderProgram m_shader;
     QGLBuffer m_vertexBuffer;
+    QGLBuffer m_normalBuffer;
     QGLBuffer m_texcoordBuffer;
     QGLBuffer m_indexBuffer;
 

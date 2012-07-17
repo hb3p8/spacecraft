@@ -6,6 +6,9 @@
 #include <QMatrix>
 #include <QImage>
 
+#include "Mesh.hpp"
+#include "Utils.hpp"
+
 #include <memory>
 #include <math.h>
 
@@ -15,6 +18,7 @@ using namespace Eigen;
 GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent ) :
     QGLWidget( format, parent ),
     m_vertexBuffer( QGLBuffer::VertexBuffer ),
+    m_normalBuffer( QGLBuffer::VertexBuffer ),
     m_texcoordBuffer( QGLBuffer::VertexBuffer ),
     m_indexBuffer( QGLBuffer::IndexBuffer ),
     m_timer( new QTimer( this ) ),
@@ -35,77 +39,11 @@ GLRenderWidget::~GLRenderWidget()
 
 }
 
-// количество вершин куба
-static const uint32_t cubeVerticesCount = 24;
-
-// описание геометрии куба для всех его сторон
-// координаты вершин куба
-const float s = 1.0f; // половина размера куба
-const float cubePositions[cubeVerticesCount][3] = {
-        {-s, s, s}, { s, s, s}, { s,-s, s}, {-s,-s, s}, // front
-        { s, s,-s}, {-s, s,-s}, {-s,-s,-s}, { s,-s,-s}, // back
-        {-s, s,-s}, { s, s,-s}, { s, s, s}, {-s, s, s}, // top
-        { s,-s,-s}, {-s,-s,-s}, {-s,-s, s}, { s,-s, s}, // bottom
-        {-s, s,-s}, {-s, s, s}, {-s,-s, s}, {-s,-s,-s}, // left
-        { s, s, s}, { s, s,-s}, { s,-s,-s}, { s,-s, s}  // right
-};
-
-// cube normals
-const float cubeNormals[cubeVerticesCount][3] = {
-        { 0, 0,-s}, { 0, 0,-s}, { 0, 0,-s}, { 0, 0,-s}, // front
-        { 0, 0, s}, { 0, 0, s}, { 0, 0, s}, { 0, 0, s}, // back
-        { 0, s, 0}, { 0, s, 0}, { 0, s, 0}, { 0, s, 0}, // top
-        { 0,-s, 0}, { 0,-s, 0}, { 0,-s, 0}, { 0,-s, 0}, // bottom
-        { s, 0, 0}, { s, 0, 0}, { s, 0, 0}, { s, 0, 0}, // left
-        {-s, 0, 0}, {-s, 0, 0}, {-s, 0, 0}, {-s, 0, 0}  // right
-};
-
-// текстурные координаты куба
-const float cubeTexcoords[cubeVerticesCount][2] = {
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // front
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // back
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // top
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // bottom
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // left
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}  // right
-};
-
-// количество индексов куба
-const uint32_t cubeIndicesCount = 36;
-
-// индексы вершин куба в порядке поротив часовой стрелки
-const uint32_t cubeIndices[cubeIndicesCount] = {
-         0, 3, 1,  1, 3, 2, // front
-         4, 7, 5,  5, 7, 6, // back
-         8,11, 9,  9,11,10, // top
-        12,15,13, 13,15,14, // bottom
-        16,19,17, 17,19,18, // left
-        20,23,21, 21,23,22  // right
-};
-
 GLuint texture;
+#define SIZE 32
+char boxes[SIZE][SIZE][SIZE];
 
-bool rayBoxIntersection( Vector3f rayStart, Vector3f rayDir, Vector3f boxMin, Vector3f boxMax, float* time )
-{
-  Vector3f Max;
-  Vector3f Min;
-  const float eps = 1e-6;
-
-  for( size_t i = 0; i < 3; i++ )
-  {
-    boxMin[ i ] = ( boxMin[ i ] - rayStart[ i ] ) / ( rayDir[ i ] + eps );
-    boxMax[ i ] = ( boxMax[ i ] - rayStart[ i ] ) / ( rayDir[ i ] + eps );
-
-    Max[ i ] = fmax( boxMax[ i ], boxMin[ i ] );
-    Min[ i ] = fmin( boxMax[ i ], boxMin[ i ] );
-  }
-
-  Max.x() = fmin( Max.x(), fmin( Max.y(), Max.z() ) );
-  Min.x() = fmax( Min.x(), fmax( Min.y(), Min.z() ) );
-
-  return Max.x() > ( *time = fmax( Min.x(), 0.0 ) );
-
-}
+Mesh* cubeMesh;
 
 void GLRenderWidget::initializeGL()
 {
@@ -117,7 +55,7 @@ void GLRenderWidget::initializeGL()
     glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 
     // Prepare a complete shader program...
-    if ( !prepareShaderProgram( "shaders/vert.glsl", "shaders/frag.glsl" ) )
+    if ( !prepareShaderProgram( m_shader, "shaders/vert.glsl", "shaders/frag.glsl" ) )
         return;
 
     m_timer = new QTimer( this );
@@ -127,38 +65,7 @@ void GLRenderWidget::initializeGL()
     QImage texImage( "images/default.png" );
     texture = bindTexture( texImage );
 
-    // vertex positions
-    m_vertexBuffer.create();
-    m_vertexBuffer.setUsagePattern( QGLBuffer::StaticDraw );
-    if ( !m_vertexBuffer.bind() )
-    {
-        qWarning() << "Could not bind vertex buffer to the context";
-        return;
-    }
-    m_vertexBuffer.allocate( cubePositions, cubeVerticesCount * 3 * sizeof( float ) );
-    m_vertexBuffer.release();
-
-    // vertex texcoords
-    m_texcoordBuffer.create();
-    m_texcoordBuffer.setUsagePattern( QGLBuffer::StaticDraw );
-    if ( !m_texcoordBuffer.bind() )
-    {
-        qWarning() << "Could not bind texcoord buffer to the context";
-        return;
-    }
-    m_texcoordBuffer.allocate( cubeTexcoords, cubeVerticesCount * 2 * sizeof( float ) );
-    m_texcoordBuffer.release();
-
-    // indices
-    m_indexBuffer.create();
-    m_indexBuffer.setUsagePattern( QGLBuffer::StaticDraw );
-    if ( !m_indexBuffer.bind() )
-    {
-        qWarning() << "Could not bind index buffer to the context";
-        return;
-    }
-    m_indexBuffer.allocate( cubeIndices, cubeIndicesCount * sizeof( uint32_t ) );
-    m_texcoordBuffer.release();
+    cubeMesh = new Mesh();
 
     // Bind the shader program so that we can associate variables from
     // our application to the shaders
@@ -168,46 +75,162 @@ void GLRenderWidget::initializeGL()
         return;
     }
 
-    // Enable the "vertex" attribute to bind it to our currently bound
-    // vertex buffer.
-    m_vertexBuffer.bind();
-    m_shader.setAttributeBuffer( "position", GL_FLOAT, 0, 3 );
-    m_vertexBuffer.release();
-
-    m_texcoordBuffer.bind();
-    m_shader.setAttributeBuffer( "texcoord", GL_FLOAT, 0, 2 );
-    m_texcoordBuffer.release();
-
+    cubeMesh->setAttributesToShader( m_shader );
 
     m_shader.release();
+
 
     m_fpsTime->start();
     m_workTime->start();
 
-    glEnable( GL_DEPTH_TEST );
-
     m_camera->setPosition( Eigen::Vector3f( 0.0, 0.0, -6.0 ) );
+
+    for( size_t i = 0; i < SIZE; i++ )
+      for( size_t j = 0; j < SIZE; j++ )
+        for( size_t k = 0; k < SIZE; k++ )
+        {
+          if( j == 0 /*rand() % 10 > 6 */ )
+            boxes[ i ][ j ][ k ] = 1;
+          else
+            boxes[ i ][ j ][ k ] = 0;
+        }
+
+
+    glEnable( GL_DEPTH_TEST );
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
 }
 
-bool GLRenderWidget::prepareShaderProgram( const QString& vertexShaderPath,
-                                           const QString& fragmentShaderPath )
+struct Intersection
 {
-    // First we load and compile the vertex shader...
-    bool result = m_shader.addShaderFromSourceFile( QGLShader::Vertex, vertexShaderPath );
-    if ( !result )
-        qWarning() << m_shader.log();
+  size_t i, j, k;
+  float time;
+  size_t side;
+};
 
-    // ...now the fragment shader...
-    result = m_shader.addShaderFromSourceFile( QGLShader::Fragment, fragmentShaderPath );
-    if ( !result )
-        qWarning() << m_shader.log();
+Intersection minIntersection;
 
-    // ...and finally we link them to resolve any references.
-    result = m_shader.link();
-    if ( !result )
-        qWarning() << "Could not link shader program:" << m_shader.log();
+void GLRenderWidget::paintGL()
+{
+    float iTime;
+    size_t side;
 
-    return result;
+    QVector3D rayPos( m_camera->position().x(),
+                      m_camera->position().y(),
+                      m_camera->position().z() );
+
+    QVector3D rayDir( m_camera->view().x(),
+                      m_camera->view().y(),
+                      m_camera->view().z() );
+
+    minIntersection.time = 1e+10;
+    minIntersection.side = SIDE_NO_INTERSECTION;
+
+    for( size_t i = 0; i < SIZE; i++ )
+      for( size_t j = 0; j < SIZE; j++ )
+        for( size_t k = 0; k < SIZE; k++ )
+        {
+          Vector3f min( 2. * i - 1., 2. * j - 1., 2. * k - 1.);
+          Vector3f max( 2. * i + 1., 2. * j + 1., 2. * k + 1.);
+
+          if( boxes[ i ][ j ][ k ] == 1 )
+            if( rayBoxIntersection( Vector3f( rayPos.x(), rayPos.y(), rayPos.z() ),
+                                    Vector3f( rayDir.x(), rayDir.y(), rayDir.z() ),
+                                    min,
+                                    max,
+                                    &iTime, &side ) )
+            {
+              if( iTime < minIntersection.time )
+              {
+                minIntersection.i = i;
+                minIntersection.j = j;
+                minIntersection.k = k;
+                minIntersection.time = iTime;
+                minIntersection.side = side;
+              }
+            }
+
+        }
+
+
+
+
+    QVector3D point = rayPos + rayDir * minIntersection.time;
+
+
+    applyInput();
+
+    // Clear the buffer with the current clearing color
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    QMatrix4x4 modelMatrix;
+    QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
+    QMatrix4x4 viewMatrix( m_camera->viewMatrix() );
+
+    m_shader.bind();
+
+    m_shader.setUniformValue( "colorTexture", 0 );
+
+    m_shader.enableAttributeArray( "position" );
+    m_shader.enableAttributeArray( "normal" );
+    m_shader.enableAttributeArray( "texcoord" );
+
+    // Draw stuff
+
+    glBindTexture( GL_TEXTURE_2D, texture );
+
+    for( size_t i = 0; i < SIZE; i++ )
+      for( size_t j = 0; j < SIZE; j++ )
+        for( size_t k = 0; k < SIZE; k++ )
+        {
+          if( boxes[ i ][ j ][ k ] == 1 )
+          {
+            Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
+
+            modelMatrix.setToIdentity();
+            modelMatrix.translate( translation.x(), translation.y(), translation.z() );
+            m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
+            m_shader.setUniformValue( "viewMatrix", viewMatrix );
+            m_shader.setUniformValue( "modelMatrix", modelMatrix );
+
+            if( minIntersection.side != SIDE_NO_INTERSECTION )
+            {
+              m_shader.setUniformValue( "point", point );
+
+              if( minIntersection.i == i && minIntersection.j == j && minIntersection.k == k )
+              {
+                m_shader.setUniformValue( "baseColor", QVector4D( 0.5, 0.0, 0.0, 0.0 ) );
+              }
+              else
+              {
+                m_shader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
+              }
+            }
+            cubeMesh->draw();
+          }
+        }
+
+    glBindTexture( GL_TEXTURE_2D, 0 );
+
+    m_shader.disableAttributeArray( "position" );
+    m_shader.disableAttributeArray( "normal" );
+    m_shader.disableAttributeArray( "texcoord" );
+
+    m_shader.release();
+
+
+
+    m_text.add( "CAMERA\t", m_camera->position() );
+    m_text.add( "FPS\t", m_fps );
+    m_text.draw( this, 10, 15 );
+    m_text.clear();
+
+    m_text.add("+");
+    m_text.draw( this, width()/2 - 2, height()/2 + 3 );
+    m_text.clear();
+
+    nextFrame();
 }
 
 void GLRenderWidget::resizeGL( int w, int h )
@@ -242,91 +265,29 @@ void GLRenderWidget::applyInput()
   m_camera->translate( delta );
 }
 
-void GLRenderWidget::paintGL()
-{
-    float iTime, val = 0.0;
-
-    QVector3D rayPos( m_camera->position().x(),
-                      m_camera->position().y(),
-                      m_camera->position().z() );
-
-    QVector3D rayDir( m_camera->view().x(),
-                      m_camera->view().y(),
-                      m_camera->view().z() );
-
-
-    if( rayBoxIntersection( Vector3f( rayPos.x(), rayPos.y(), rayPos.z() ),
-                            Vector3f( rayDir.x(), rayDir.y(), rayDir.z() ),
-                            Vector3f( -1.0, -1.0, -1.0 ),
-                            Vector3f( 1.0, 1.0, 1.0 ),
-                            &iTime )
-    ) val = 0.5;
-
-    QVector3D point = rayPos + rayDir * iTime;
-
-
-    applyInput();
-
-    // Clear the buffer with the current clearing color
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-    QMatrix4x4 matrix( m_camera->projectionMatrix() );
-    matrix = matrix * m_camera->viewMatrix();
-
-    m_shader.bind();
-
-    m_shader.setUniformValue( "colorTexture", 0 );
-
-    m_vertexBuffer.bind();
-    m_texcoordBuffer.bind();
-    m_indexBuffer.bind();
-    m_shader.enableAttributeArray( "position" );
-    m_shader.enableAttributeArray( "texcoord" );
-
-    // Draw stuff
-
-    glBindTexture( GL_TEXTURE_2D, texture );
-
-    m_shader.setUniformValue( "modelViewProjectionMatrix", matrix );
-    m_shader.setUniformValue( "baseColor", QVector4D( val, 0.0, 0.0, 0.0 ) );
-    m_shader.setUniformValue( "point", point );
-    glDrawElements( GL_TRIANGLES, cubeIndicesCount, GL_UNSIGNED_INT, NULL );
-
-    matrix.translate( 3.0, 0.0, 3.0 );
-    m_shader.setUniformValue( "modelViewProjectionMatrix", matrix );
-    m_shader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
-    glDrawElements( GL_TRIANGLES, cubeIndicesCount, GL_UNSIGNED_INT, NULL );
-
-    glBindTexture( GL_TEXTURE_2D, 0 );
-
-    m_shader.disableAttributeArray( "position" );
-    m_shader.disableAttributeArray( "texcoord" );
-    m_vertexBuffer.release();
-    m_texcoordBuffer.release();
-    m_indexBuffer.release();
-    m_shader.release();
-
-
-
-    m_text.add( "CAMERA\t", m_camera->position() );
-    m_text.add( "FPS\t", m_fps );
-    m_text.draw( this, 10, 15 );
-    m_text.clear();
-
-    m_text.add("+");
-    m_text.draw( this, 400, 300 );
-    m_text.clear();
-
-    nextFrame();
-}
-
 void GLRenderWidget::keyPressEvent( QKeyEvent* e )
 {
+    static bool wireframeMode = false;
     switch ( e->key() )
     {
         case Qt::Key_Escape:
             QCoreApplication::instance()->quit();
             break;
+        case Qt::Key_F:
+            if( wireframeMode )
+              glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+            else
+              glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+            wireframeMode = !wireframeMode;
+            break;
+        case Qt::Key_Space:
+        {
+          size_t offset[3] = { 0, 0, 0 };
+          offset[ minIntersection.side % 3 ] =  minIntersection.side > 2 ? 1 : -1;
+          boxes[ minIntersection.i + offset[ 0 ] ]
+               [ minIntersection.j + offset[ 1 ] ]
+               [ minIntersection.k + offset[ 2 ] ] = 1;
+        }break;
         case Qt::Key_W:
         {
           m_inputMap.insert( Qt::Key_W, true );
