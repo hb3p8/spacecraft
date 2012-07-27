@@ -116,6 +116,7 @@ void Mesh::allocateBuffers( const void* positionsData, const void* normalsData,
 
 void Mesh::setAttributesToShader( QGLShaderProgram& shader )
 {
+  shade_prog=&shader;
   m_vertexBuffer.bind();
   shader.setAttributeBuffer( "position", GL_FLOAT, 0, 3 );
   m_vertexBuffer.release();
@@ -131,6 +132,19 @@ void Mesh::setAttributesToShader( QGLShaderProgram& shader )
 
 void Mesh::draw()
 {
+    m_vertexBuffer.bind();
+    shade_prog->setAttributeBuffer( "position", GL_FLOAT, 0, 3 );
+    m_vertexBuffer.release();
+
+    m_normalBuffer.bind();
+    shade_prog->setAttributeBuffer( "normal", GL_FLOAT, 0, 3 );
+    m_normalBuffer.release();
+
+    m_texcoordBuffer.bind();
+    shade_prog->setAttributeBuffer( "texcoord", GL_FLOAT, 0, 2 );
+    m_texcoordBuffer.release();
+
   m_indexBuffer.bind();
+
   glDrawElements( GL_TRIANGLES, cubeIndicesCount, GL_UNSIGNED_INT, NULL );
 }

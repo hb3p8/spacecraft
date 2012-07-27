@@ -89,7 +89,7 @@ void GLRenderWidget::initializeGL()
       for( size_t j = 0; j < SIZE; j++ )
         for( size_t k = 0; k < SIZE; k++ )
         {
-          if( j == 0 /*rand() % 10 > 6 */ )
+          if( j == 0||j==1||j==2||j==3||j==4||j==5||j==6||j==7||j==8||j==9 /*rand() % 10 > 6 */ )
             boxes[ i ][ j ][ k ] = 1;
           else
             boxes[ i ][ j ][ k ] = 0;
@@ -210,6 +210,13 @@ void GLRenderWidget::paintGL()
             cubeMesh->draw();
           }
         }
+
+    /*m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
+    m_shader.setUniformValue( "viewMatrix", viewMatrix );
+    m_shader.setUniformValue( "modelMatrix", modelMatrix );
+
+    cubeMesh->draw();*/
+
 
     glBindTexture( GL_TEXTURE_2D, 0 );
 

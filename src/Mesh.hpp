@@ -19,6 +19,7 @@ public:
 
 private:
 
+    QGLShaderProgram* shade_prog;
     QGLBuffer m_vertexBuffer;
     QGLBuffer m_normalBuffer;
     QGLBuffer m_texcoordBuffer;
