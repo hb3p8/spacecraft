@@ -11,6 +11,7 @@
 
 #include "TextRender.hpp"
 #include "Camera.hpp"
+#include "ShipModel.hpp"
 
 typedef QMap< Qt::Key, bool > InputMap;
 
@@ -64,6 +65,8 @@ private:
     QPoint m_lastMousePos;
 
     InputMap m_inputMap;
+
+    ShipModel m_shipModel;
 
 };
 

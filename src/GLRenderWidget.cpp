@@ -40,8 +40,8 @@ GLRenderWidget::~GLRenderWidget()
 }
 
 GLuint texture;
-#define SIZE 32
-char boxes[SIZE][SIZE][SIZE];
+//#define SIZE 32
+//char boxes[SIZE][SIZE][SIZE];
 
 Mesh* cubeMesh;
 
@@ -85,17 +85,6 @@ void GLRenderWidget::initializeGL()
 
     m_camera->setPosition( Eigen::Vector3f( 0.0, 0.0, -6.0 ) );
 
-    for( size_t i = 0; i < SIZE; i++ )
-      for( size_t j = 0; j < SIZE; j++ )
-        for( size_t k = 0; k < SIZE; k++ )
-        {
-          if( j == 0||j==1||j==2||j==3||j==4||j==5||j==6||j==7||j==8||j==9 /*rand() % 10 > 6 */ )
-            boxes[ i ][ j ][ k ] = 1;
-          else
-            boxes[ i ][ j ][ k ] = 0;
-        }
-
-
     glEnable( GL_DEPTH_TEST );
     glEnable( GL_CULL_FACE );
     glCullFace( GL_BACK );
@@ -127,14 +116,14 @@ void GLRenderWidget::paintGL()
     minIntersection.time = 1e+10;
     minIntersection.side = SIDE_NO_INTERSECTION;
 
-    for( size_t i = 0; i < SIZE; i++ )
-      for( size_t j = 0; j < SIZE; j++ )
-        for( size_t k = 0; k < SIZE; k++ )
+    for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
+      for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
+        for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
         {
           Vector3f min( 2. * i - 1., 2. * j - 1., 2. * k - 1.);
           Vector3f max( 2. * i + 1., 2. * j + 1., 2. * k + 1.);
 
-          if( boxes[ i ][ j ][ k ] == 1 )
+          if( m_shipModel.getBlock( i , j , k ) == 1 )
             if( rayBoxIntersection( Vector3f( rayPos.x(), rayPos.y(), rayPos.z() ),
                                     Vector3f( rayDir.x(), rayDir.y(), rayDir.z() ),
                                     min,
@@ -180,11 +169,11 @@ void GLRenderWidget::paintGL()
 
     glBindTexture( GL_TEXTURE_2D, texture );
 
-    for( size_t i = 0; i < SIZE; i++ )
-      for( size_t j = 0; j < SIZE; j++ )
-        for( size_t k = 0; k < SIZE; k++ )
+    for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
+      for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
+        for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
         {
-          if( boxes[ i ][ j ][ k ] == 1 )
+          if( m_shipModel.getBlock( i , j , k ) == 1 )
           {
             Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
 
@@ -291,9 +280,10 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
         {
           size_t offset[3] = { 0, 0, 0 };
           offset[ minIntersection.side % 3 ] =  minIntersection.side > 2 ? 1 : -1;
-          boxes[ minIntersection.i + offset[ 0 ] ]
-               [ minIntersection.j + offset[ 1 ] ]
-               [ minIntersection.k + offset[ 2 ] ] = 1;
+          m_shipModel.getBlock(
+               minIntersection.i + offset[ 0 ],
+               minIntersection.j + offset[ 1 ],
+               minIntersection.k + offset[ 2 ] ) = 1;
         }break;
         case Qt::Key_W:
         {
