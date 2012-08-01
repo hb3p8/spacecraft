@@ -1,10 +1,11 @@
 #ifndef OCTREE_H
 #define OCTREE_H
 
-#include "ShipModel.hpp"
 #include <vector>
 #include <memory>
+#include <Eigen/Eigen>
 
+class ShipModel;
 
 struct BlockRef
 {
@@ -25,6 +26,8 @@ public:
   inline OctreeNode* parent() { return m_parent; }
   inline std::vector<OctreeNodePtr>& children() { return m_children; }
   inline std::vector<BlockRef>& blocks() { return m_blocks; }
+  inline void makeLeaf() { m_isLeaf = true; }
+  inline bool isLeaf() const { return m_isLeaf; }
 
   Eigen::Vector3i maxBorder;
   Eigen::Vector3i minBorder;
@@ -46,8 +49,11 @@ public:
 
     void cleanup();
 
-    void build( ShipModel& model );
+    void build( ShipModel* model );
     void buildNode( OctreeNode* parent, int level );
+
+    const OctreeNode* getRoot() const { return m_root; }
+    OctreeNode* getRoot() { return m_root; }
 
 
 private:

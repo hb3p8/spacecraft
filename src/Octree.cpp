@@ -1,4 +1,5 @@
 #include "Octree.hpp"
+#include "ShipModel.hpp"
 
 using namespace Eigen;
 using namespace std;
@@ -28,7 +29,7 @@ void Octree::cleanup()
 
 }
 
-void Octree::build(  ShipModel& model )
+void Octree::build( ShipModel* model )
 {
   cleanup();
 
@@ -38,37 +39,40 @@ void Octree::build(  ShipModel& model )
     for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
       for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
       {
-        if( model.getBlock( i, j, k ) > 0 )
+        if( model->getBlock( i, j, k ) > 0 )
           m_root->blocks().push_back( BlockRef( i, j, k ) );
       }
 
   m_root->maxBorder = Vector3i( SHIP_MAX_SIZE - 1, SHIP_MAX_SIZE - 1, SHIP_MAX_SIZE - 1 );
   m_root->minBorder = Vector3i( 0, 0, 0 );
 
+  buildNode( m_root, 0 );
+
 
 }
 
 void Octree::buildNode( OctreeNode* parent, int level )
 {
-  if( parent->blocks().size() < 1 )
+  if( parent->blocks().size() < 10 )
   {
-    //leaf
+    // leaf
+    parent->makeLeaf();
   } else
   {
-    //node
+    // split into up to 8 nodes
+    // (skip node if has no blocks)
 
-    int halfX = parent->maxBorder.x() - parent->minBorder.x() / 2;
-    int halfY = parent->maxBorder.y() - parent->minBorder.y() / 2;
-    int halfZ = parent->maxBorder.z() - parent->minBorder.z() / 2;
+    int halfDim = ( parent->maxBorder.x() - parent->minBorder.x() + 1 ) / 2;
 
     for( size_t x = 0; x < 2; x++ )
       for( size_t y = 0; y < 2; y++ )
         for( size_t z = 0; z < 2; z++ )
         {
+          // TODO: убрать лишние динамические выделения памяти
           OctreeNode* node = new OctreeNode();
-          node->minBorder = parent->minBorder + Vector3i( x * halfX, y * halfY, z * halfZ );
+          node->minBorder = parent->minBorder + Vector3i( x * halfDim, y * halfDim, z * halfDim );
           node->maxBorder = parent->minBorder +
-              Vector3i( ( x + 1 ) * halfX, ( y + 1 ) * halfY, ( z + 1 ) * halfZ );
+              Vector3i( ( x + 1 ) * halfDim, ( y + 1 ) * halfDim, ( z + 1 ) * halfDim );
 
           // TODO: вынести из цикла
           for( size_t u = 0; u < parent->blocks().size(); u++ )
@@ -83,9 +87,14 @@ void Octree::buildNode( OctreeNode* parent, int level )
               node->blocks().push_back( parent->blocks()[ u ] );
           }
 
-          parent->children().push_back( OctreeNodePtr( node ) );
-
-          buildNode( node, level + 1 );
+          if( node->blocks().size() > 0 )
+          {
+            parent->children().push_back( OctreeNodePtr( node ) );
+            buildNode( node, level + 1 );
+          } else
+          {
+            delete node;
+          }
         }
 
   }

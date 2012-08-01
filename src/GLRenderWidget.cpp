@@ -91,19 +91,12 @@ void GLRenderWidget::initializeGL()
 
 }
 
-struct Intersection
-{
-  size_t i, j, k;
-  float time;
-  size_t side;
-};
-
 Intersection minIntersection;
 
 void GLRenderWidget::paintGL()
 {
-    float iTime;
-    size_t side;
+//    float iTime;
+//    size_t side;
 
     QVector3D rayPos( m_camera->position().x(),
                       m_camera->position().y(),
@@ -116,6 +109,8 @@ void GLRenderWidget::paintGL()
     minIntersection.time = 1e+10;
     minIntersection.side = SIDE_NO_INTERSECTION;
 
+    m_shipModel.octreeIntersect( m_camera->position(), m_camera->view(), minIntersection );
+/*
     for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
       for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
         for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
@@ -124,8 +119,8 @@ void GLRenderWidget::paintGL()
           Vector3f max( 2. * i + 1., 2. * j + 1., 2. * k + 1.);
 
           if( m_shipModel.getBlock( i , j , k ) == 1 )
-            if( rayBoxIntersection( Vector3f( rayPos.x(), rayPos.y(), rayPos.z() ),
-                                    Vector3f( rayDir.x(), rayDir.y(), rayDir.z() ),
+            if( rayBoxIntersection( m_camera->position(),
+                                    m_camera->view(),
                                     min,
                                     max,
                                     &iTime, &side ) )
@@ -140,7 +135,7 @@ void GLRenderWidget::paintGL()
               }
             }
 
-        }
+        }*/
 
 
 
