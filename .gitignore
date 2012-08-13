@@ -1,5 +1,10 @@
 *#*#
-bin/Game
+
+# ignore everything in bin
+bin/*
+# except shaders
+!bin/shaders/*
+
 build/*
 *~
 CMakeLists.txt.user

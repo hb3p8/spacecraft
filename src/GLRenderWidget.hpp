@@ -44,10 +44,6 @@ private:
     static const int defaultYSize = 600;
 
     QGLShaderProgram m_shader;
-    QGLBuffer m_vertexBuffer;
-    QGLBuffer m_normalBuffer;
-    QGLBuffer m_texcoordBuffer;
-    QGLBuffer m_indexBuffer;
 
     QTimer* m_timer;
 

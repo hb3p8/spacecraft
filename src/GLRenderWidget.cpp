@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QMatrix>
 #include <QImage>
+#include <QFile>
 
 #include "Mesh.hpp"
 #include "Utils.hpp"
@@ -17,10 +18,6 @@ using namespace Eigen;
 
 GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent ) :
     QGLWidget( format, parent ),
-    m_vertexBuffer( QGLBuffer::VertexBuffer ),
-    m_normalBuffer( QGLBuffer::VertexBuffer ),
-    m_texcoordBuffer( QGLBuffer::VertexBuffer ),
-    m_indexBuffer( QGLBuffer::IndexBuffer ),
     m_timer( new QTimer( this ) ),
     m_fps( 0.0f ),
     m_frames( 0 ),
@@ -32,6 +29,9 @@ GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent ) :
   setMinimumSize( defaultXSize, defaultYSize );
 
   m_camera = CameraPtr( new Camera() );
+
+  if( QFile::exists( "default.txt" ) )
+    m_shipModel.loadFromFile( "default.txt" );
 }
 
 GLRenderWidget::~GLRenderWidget()
@@ -40,8 +40,6 @@ GLRenderWidget::~GLRenderWidget()
 }
 
 GLuint texture;
-//#define SIZE 32
-//char boxes[SIZE][SIZE][SIZE];
 
 Mesh* cubeMesh;
 
@@ -282,6 +280,7 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
     {
         case Qt::Key_Escape:
             QCoreApplication::instance()->quit();
+            m_shipModel.saveToFile( "default.txt" );
             break;
         case Qt::Key_F:
             if( wireframeMode )

@@ -1,8 +1,10 @@
 #include "ShipModel.hpp"
 #include <assert.h>
+#include <iostream>
+#include <fstream>
 
 using namespace Eigen;
-
+using namespace std;
 
 ShipModel::ShipModel()
 {
@@ -103,6 +105,60 @@ Intersection ShipModel::traverse( Vector3f rayStart, Vector3f rayDir, OctreeNode
   }
 
   return minIntersection;
+}
+
+void ShipModel::saveToFile( string fileName )
+{
+  ofstream outfile;
+  outfile.open( fileName );
+
+  vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
+
+  outfile << SHIP_MAX_SIZE << endl;
+  outfile << blocks.size() << endl;
+
+  for( BlockRef& block : blocks )
+  {
+    outfile << block.i << "\t" << block.j << "\t" << block.k << endl;
+  }
+
+  outfile.close();
+}
+
+void ShipModel::loadFromFile( string fileName )
+{
+  // clean
+  for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
+    for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
+      for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
+      {
+          m_blocks[ i ][ j ][ k ] = 0;
+      }
+
+  ifstream infile;
+  infile.open( fileName );
+
+  int worldDim;
+  infile >> worldDim;
+  assert( worldDim == SHIP_MAX_SIZE );
+
+  size_t size;
+  infile >> size;
+
+  for( size_t c = 0; c < size; c++ )
+  {
+    int i, j, k;
+
+    infile >> i;
+    infile >> j;
+    infile >> k;
+
+    m_blocks[ i ][ j ][ k ] = 1;
+  }
+
+  infile.close();
+
+  refreshModel();
 }
 
 

@@ -19,6 +19,9 @@ public:
     bool octreeIntersect( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, Intersection& intersection );
 
     void refreshModel();
+    void saveToFile( std::string fileName );
+    void loadFromFile( std::string fileName );
+
     Octree& getOctree() { return m_octree; }
 
 private:
