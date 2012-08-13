@@ -258,13 +258,27 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
             break;
         case Qt::Key_Space:
         {
-          size_t offset[3] = { 0, 0, 0 };
-          offset[ minIntersection.side % 3 ] =  minIntersection.side > 2 ? 1 : -1;
-          m_shipModel.getBlock(
-               minIntersection.i + offset[ 0 ],
-               minIntersection.j + offset[ 1 ],
-               minIntersection.k + offset[ 2 ] ) = 1;
-          m_shipModel.refreshModel();
+          if( minIntersection.side != SIDE_NO_INTERSECTION )
+          {
+            size_t offset[3] = { 0, 0, 0 };
+            offset[ minIntersection.side % 3 ] =  minIntersection.side > 2 ? 1 : -1;
+            m_shipModel.getBlock(
+                 minIntersection.i + offset[ 0 ],
+                 minIntersection.j + offset[ 1 ],
+                 minIntersection.k + offset[ 2 ] ) = 1;
+            m_shipModel.refreshModel();
+          }
+        }break;
+        case Qt::Key_X:
+        {
+          if( minIntersection.side != SIDE_NO_INTERSECTION )
+          {
+            m_shipModel.getBlock(
+                 minIntersection.i,
+                 minIntersection.j,
+                 minIntersection.k ) = 0;
+            m_shipModel.refreshModel();
+          }
         }break;
         case Qt::Key_W:
         {
@@ -282,6 +296,7 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
         {
           m_inputMap.insert( Qt::Key_D, true );
         }break;
+
   /*      case Qt::Key_Q:
         {
           m_camera->rotate( AngleAxisf( 0.0, 0.0, -5.0 / 360 * M_PI ));
