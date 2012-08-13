@@ -52,15 +52,18 @@ void GLRenderWidget::initializeGL()
     // Set the clear color to black
     glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 
+
+
     // Prepare a complete shader program...
-    if ( !prepareShaderProgram( m_shader, "shaders/vert.glsl", "shaders/frag.glsl" ) )
+    if ( !prepareShaderProgram( m_shader, QString( SPACECRAFT_PATH ) + "/shaders/vert.glsl",
+                                QString( SPACECRAFT_PATH ) + "/shaders/frag.glsl" ) )
         return;
 
     m_timer = new QTimer( this );
     m_timer->start( 10 );
     connect( m_timer, SIGNAL( timeout() ), this, SLOT( updateGL() ) );
 
-    QImage texImage( "images/default.png" );
+    QImage texImage( QString( SPACECRAFT_PATH ) + "/images/default.png" );
     texture = bindTexture( texImage );
 
     cubeMesh = new Mesh();
@@ -108,35 +111,6 @@ void GLRenderWidget::paintGL()
     minIntersection.side = SIDE_NO_INTERSECTION;
 
     m_shipModel.octreeIntersect( m_camera->position(), m_camera->view(), minIntersection );
-/*
-    for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
-      for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
-        for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
-        {
-          Vector3f min( 2. * i - 1., 2. * j - 1., 2. * k - 1.);
-          Vector3f max( 2. * i + 1., 2. * j + 1., 2. * k + 1.);
-
-          if( m_shipModel.getBlock( i , j , k ) == 1 )
-            if( rayBoxIntersection( m_camera->position(),
-                                    m_camera->view(),
-                                    min,
-                                    max,
-                                    &iTime, &side ) )
-            {
-              if( iTime < minIntersection.time )
-              {
-                minIntersection.i = i;
-                minIntersection.j = j;
-                minIntersection.k = k;
-                minIntersection.time = iTime;
-                minIntersection.side = side;
-              }
-            }
-
-        }*/
-
-
-
 
     QVector3D point = rayPos + rayDir * minIntersection.time;
 
@@ -201,13 +175,6 @@ void GLRenderWidget::paintGL()
         cubeMesh->draw();
       }
     }
-
-    /*m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
-    m_shader.setUniformValue( "viewMatrix", viewMatrix );
-    m_shader.setUniformValue( "modelMatrix", modelMatrix );
-
-    cubeMesh->draw();*/
-
 
     glBindTexture( GL_TEXTURE_2D, 0 );
 

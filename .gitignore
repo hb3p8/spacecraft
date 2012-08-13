@@ -2,9 +2,8 @@
 
 # ignore everything in bin
 bin/*
-# except shaders
-!bin/shaders/*
 
+# ignore everything in build
 build/*
 *~
 CMakeLists.txt.user
