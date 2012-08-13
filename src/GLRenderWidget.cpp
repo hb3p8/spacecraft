@@ -164,36 +164,45 @@ void GLRenderWidget::paintGL()
 
     glBindTexture( GL_TEXTURE_2D, texture );
 
-    for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
-      for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
-        for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
+    Octree& tree = m_shipModel.getOctree();
+
+    for( BlockRef& block : tree.getRoot()->blocks() )
+//    for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
+//      for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
+//        for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
+    {
+      size_t i = block.i;
+      size_t j = block.j;
+      size_t k = block.k;
+
+      int block = m_shipModel.getBlock( i, j, k );
+      if( block > 0 )
+      {
+        Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
+
+        modelMatrix.setToIdentity();
+        modelMatrix.translate( translation.x(), translation.y(), translation.z() );
+        m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
+        m_shader.setUniformValue( "viewMatrix", viewMatrix );
+        m_shader.setUniformValue( "modelMatrix", modelMatrix );
+        m_shader.setUniformValue( "ambient", 0.6f + 0.3f * block / 30.f );
+
+        if( minIntersection.side != SIDE_NO_INTERSECTION )
         {
-          if( m_shipModel.getBlock( i , j , k ) == 1 )
+          m_shader.setUniformValue( "point", point );
+
+          if( minIntersection.i == i && minIntersection.j == j && minIntersection.k == k )
           {
-            Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
-
-            modelMatrix.setToIdentity();
-            modelMatrix.translate( translation.x(), translation.y(), translation.z() );
-            m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
-            m_shader.setUniformValue( "viewMatrix", viewMatrix );
-            m_shader.setUniformValue( "modelMatrix", modelMatrix );
-
-            if( minIntersection.side != SIDE_NO_INTERSECTION )
-            {
-              m_shader.setUniformValue( "point", point );
-
-              if( minIntersection.i == i && minIntersection.j == j && minIntersection.k == k )
-              {
-                m_shader.setUniformValue( "baseColor", QVector4D( 0.5, 0.0, 0.0, 0.0 ) );
-              }
-              else
-              {
-                m_shader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
-              }
-            }
-            cubeMesh->draw();
+            m_shader.setUniformValue( "baseColor", QVector4D( 0.5, 0.0, 0.0, 0.0 ) );
+          }
+          else
+          {
+            m_shader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
           }
         }
+        cubeMesh->draw();
+      }
+    }
 
     /*m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
     m_shader.setUniformValue( "viewMatrix", viewMatrix );
@@ -212,8 +221,18 @@ void GLRenderWidget::paintGL()
 
 
 
-    m_text.add( "CAMERA\t", m_camera->position() );
-    m_text.add( "FPS\t", m_fps );
+
+
+
+    m_text.add( "camera\t", m_camera->position() );
+    m_text.add( "fps\t", m_fps );
+
+    if( minIntersection.side != SIDE_NO_INTERSECTION )
+    {
+      int selectedBlock = m_shipModel.getBlock( minIntersection.i, minIntersection.j, minIntersection.k );
+      m_text.add( "lightness\t", selectedBlock );
+    }
+
     m_text.draw( this, 10, 15 );
     m_text.clear();
 
@@ -279,6 +298,7 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
                minIntersection.i + offset[ 0 ],
                minIntersection.j + offset[ 1 ],
                minIntersection.k + offset[ 2 ] ) = 1;
+          m_shipModel.refreshModel();
         }break;
         case Qt::Key_W:
         {

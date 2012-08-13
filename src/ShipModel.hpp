@@ -18,8 +18,12 @@ public:
     inline BlockData& getBlock( int x, int y, int z ) { return m_blocks[ x ][ y ][ z ]; }
     bool octreeIntersect( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, Intersection& intersection );
 
+    void refreshModel();
+    Octree& getOctree() { return m_octree; }
+
 private:
     Intersection traverse( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, OctreeNode& node );
+    void recalculateAO();
 
     BlockData m_blocks[SHIP_MAX_SIZE][SHIP_MAX_SIZE][SHIP_MAX_SIZE];
 

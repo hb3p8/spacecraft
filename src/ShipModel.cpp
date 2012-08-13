@@ -13,13 +13,44 @@ ShipModel::ShipModel()
     for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
       for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
       {
-        if( /*j < 4 && i < 4 && k < 4 */ ( j == 0 ) || ( j < 3 && rand() % 10 > 6 )  )
+        if( /*j < 4 && i < 4 && k < 4 */ ( j == 0 ) /*|| ( j < 3 && rand() % 10 > 6 )*/  )
           m_blocks[ i ][ j ][ k ] = 1;
         else
           m_blocks[ i ][ j ][ k ] = 0;
       }
 
+  refreshModel();
+}
+
+void ShipModel::recalculateAO()
+{
+  for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
+    for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
+      for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
+      {
+        if( m_blocks[ i ][ j ][ k ] == 0 ) continue;
+
+        int occluders = 0;
+        for( int x = -1; x <= 1; x++ )
+          for( int y = -1; y <= 1; y++ )
+            for( int z = -1; z <= 1; z++ )
+            {
+              if( ( i + x < 0 ) || ( j + y < 0 ) || ( k + z < 0 ) ||
+                  ( i + x >= SHIP_MAX_SIZE ) || ( j + y >= SHIP_MAX_SIZE ) || ( k + z >= SHIP_MAX_SIZE ) )
+                continue;
+
+              if( m_blocks[ i + x ][ j + y ][ k + z ] > 0 )
+                occluders++;
+            }
+        m_blocks[ i ][ j ][ k ] = 27 - occluders + 1;
+      }
+}
+
+void ShipModel::refreshModel()
+{
   m_octree.build( this );
+
+  recalculateAO();
 }
 
 bool ShipModel::octreeIntersect( Vector3f rayStart, Vector3f rayDir, Intersection& intersection )
