@@ -6,7 +6,7 @@
 #include "Utils.hpp"
 
 
-#define SHIP_MAX_SIZE 8
+#define SHIP_MAX_SIZE 32
 
 typedef unsigned int BlockData;
 

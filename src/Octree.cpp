@@ -62,7 +62,7 @@ void Octree::buildNode( OctreeNode* parent, int level )
     // split into up to 8 nodes
     // (skip node if has no blocks)
 
-    int halfDim = ( parent->maxBorder.x() - parent->minBorder.x() + 1 ) / 2;
+    int halfDim = ( parent->maxBorder.x() - parent->minBorder.x() ) / 2;
 
     for( size_t x = 0; x < 2; x++ )
       for( size_t y = 0; y < 2; y++ )
@@ -70,9 +70,10 @@ void Octree::buildNode( OctreeNode* parent, int level )
         {
           // TODO: убрать лишние динамические выделения памяти
           OctreeNode* node = new OctreeNode();
-          node->minBorder = parent->minBorder + Vector3i( x * halfDim, y * halfDim, z * halfDim );
+          node->minBorder = parent->minBorder +
+              Vector3i( x * ( 1 + halfDim ), y * ( 1 + halfDim ), z * ( 1 + halfDim ) );
           node->maxBorder = parent->minBorder +
-              Vector3i( ( x + 1 ) * halfDim, ( y + 1 ) * halfDim, ( z + 1 ) * halfDim );
+              Vector3i( x + ( 1 + x ) * halfDim, y + ( 1 + y ) * halfDim, z + ( 1 + z ) * halfDim );
 
           // TODO: вынести из цикла
           for( size_t u = 0; u < parent->blocks().size(); u++ )
@@ -81,9 +82,9 @@ void Octree::buildNode( OctreeNode* parent, int level )
             int& j = parent->blocks()[ u ].j;
             int& k = parent->blocks()[ u ].k;
 
-            if( i < node->maxBorder.x() && i >= node->minBorder.x() &&
-                j < node->maxBorder.y() && j >= node->minBorder.y() &&
-                k < node->maxBorder.z() && k >= node->minBorder.z() )
+            if( i <= node->maxBorder.x() && i >= node->minBorder.x() &&
+                j <= node->maxBorder.y() && j >= node->minBorder.y() &&
+                k <= node->maxBorder.z() && k >= node->minBorder.z() )
               node->blocks().push_back( parent->blocks()[ u ] );
           }
 

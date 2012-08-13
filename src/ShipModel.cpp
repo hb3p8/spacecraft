@@ -13,7 +13,7 @@ ShipModel::ShipModel()
     for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
       for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
       {
-        if( j < 4 && i < 4 && k < 4 /*( j < 3 && rand() % 10 > 6 )*/  )
+        if( /*j < 4 && i < 4 && k < 4 */ ( j == 0 ) || ( j < 3 && rand() % 10 > 6 )  )
           m_blocks[ i ][ j ][ k ] = 1;
         else
           m_blocks[ i ][ j ][ k ] = 0;
@@ -36,8 +36,8 @@ Intersection ShipModel::traverse( Vector3f rayStart, Vector3f rayDir, OctreeNode
   size_t newSide;
   Intersection minIntersection = { 0, 0, 0, 1e+10, SIDE_NO_INTERSECTION };
 
-  Vector3f min( 2. * node.minBorder.x(), 2. * node.minBorder.y(), 2. * node.minBorder.z() );
-  Vector3f max( 2. * node.maxBorder.x(), 2. * node.maxBorder.y(), 2. * node.maxBorder.z() );
+  Vector3f min( 2. * node.minBorder.x() - 1., 2. * node.minBorder.y() - 1., 2. * node.minBorder.z() -1. );
+  Vector3f max( 2. * node.maxBorder.x() + 1., 2. * node.maxBorder.y() + 1., 2. * node.maxBorder.z() +1. );
 
   if( rayBoxIntersection( rayStart, rayDir, min, max, &newTime, &newSide ) )
   {
