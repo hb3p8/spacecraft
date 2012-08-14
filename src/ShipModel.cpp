@@ -15,44 +15,132 @@ ShipModel::ShipModel()
     for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
       for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
       {
-        if( /*j < 4 && i < 4 && k < 4 */ ( j == 0 ) /*|| ( j < 3 && rand() % 10 > 6 )*/  )
+        if( /*j < 4 && i < 4 && k < 4 */ ( j == 0 ) /*|| ( j < 3 && rand() % 10 > 6 ) */ )
           m_blocks[ i ][ j ][ k ] = 1;
         else
           m_blocks[ i ][ j ][ k ] = 0;
       }
 
-  refreshModel();
+//  refreshModel();
 }
 
-void ShipModel::recalculateAO()
+void ShipModel::buildMesh()
 {
-  for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
-    for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
-      for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
-      {
-        if( m_blocks[ i ][ j ][ k ] == 0 ) continue;
+  // преобразование индекса в side (формат side см в utils)
+  int axisToSideRemap[ 7 ] = { 2, 1, 0, 6, 3, 4, 5 };
 
-        int occluders = 0;
-        for( int x = -1; x <= 1; x++ )
-          for( int y = -1; y <= 1; y++ )
-            for( int z = -1; z <= 1; z++ )
+  float* vertices;
+  float* normals;
+  float* texcoords;
+  float* colors;
+  uint32_t* indices;
+
+  size_t verticesSize = m_octree.getRoot()->blocks().size() * cubeVerticesCount * 3;
+  size_t texcoordsSize = m_octree.getRoot()->blocks().size() * cubeVerticesCount * 2;
+  size_t indicesSize = m_octree.getRoot()->blocks().size() * cubeIndicesCount;
+
+  vertices = new float[ verticesSize ];
+  normals = new float[ verticesSize ];
+  texcoords = new float[ texcoordsSize ];
+  colors = new float[ verticesSize ];
+  indices = new uint32_t[ indicesSize ];
+
+  long int vertCounter = 0;
+  long int idxCounter = 0;
+
+  for( BlockRef& block : m_octree.getRoot()->blocks() )
+  {
+    size_t i = block.i;
+    size_t j = block.j;
+    size_t k = block.k;
+
+    // аккумулятор окклюдеров на каждую сторону куба + ещё один
+    // элемент массива для удобства
+    int occluders[ 7 ] = { 0, 0, 0, 0, 0, 0, -1 };
+    for( int x = -1; x <= 1; x++ )
+      for( int y = -1; y <= 1; y++ )
+        for( int z = -1; z <= 1; z++ )
+        {
+          int offset[3] = { x, y, z };
+
+          if( ( i + x < 0 ) || ( j + y < 0 ) || ( k + z < 0 ) ||
+              ( i + x >= SHIP_MAX_SIZE ) || ( j + y >= SHIP_MAX_SIZE ) || ( k + z >= SHIP_MAX_SIZE ) )
+            continue;
+
+          for( int axis = 1; axis <= 3; axis++ )
+          {
+            int index = axis * offset[ axis - 1 ] + 3;
+
+            // если сторона ещё не помечена и по offset'у расположен блок
+            if( occluders[ axisToSideRemap[ index ] ] >= 0 )
             {
-              if( ( i + x < 0 ) || ( j + y < 0 ) || ( k + z < 0 ) ||
-                  ( i + x >= SHIP_MAX_SIZE ) || ( j + y >= SHIP_MAX_SIZE ) || ( k + z >= SHIP_MAX_SIZE ) )
-                continue;
-
-              if( m_blocks[ i + x ][ j + y ][ k + z ] > 0 )
-                occluders++;
+              if( m_blocks[ i + offset[ 0 ] ]
+                          [ j + offset[ 1 ] ]
+                          [ k + offset[ 2 ] ] > 0 )
+              {
+                // если окклюдер прямо напротив блока, помечаем сторону на удаление
+                if( ( offset[ ( axis ) % 3 ] == 0 ) &&  ( offset[ ( axis + 1 ) % 3 ] == 0 ) )
+                  occluders[ axisToSideRemap[ index ] ] = -1;
+                else // иначе, прибавляем его к сумме для стороны
+                  occluders[ axisToSideRemap[ index ] ] += 1;
+              }
             }
-        m_blocks[ i ][ j ][ k ] = 27 - occluders + 1;
+          }
+        }
+
+    // генерим меш
+
+    int rowToSideRemap[ 6 ] = { 5, 2, 4, 1, 0, 3 };
+
+    memcpy( normals + vertCounter * 3, cubeNormals, cubeVerticesCount * 3 * sizeof( float ) );
+    memcpy( texcoords + vertCounter * 2, cubeTexcoords, cubeVerticesCount * 2 * sizeof( float ) );
+    memcpy( colors + vertCounter * 3, cubeColors, cubeVerticesCount * 3 * sizeof( float ) );
+
+    Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
+
+    for( size_t i = 0; i < cubeIndicesCount; i++ )
+    {
+      int row = i / 6;
+      int side = rowToSideRemap[ row ];
+
+      // если сторона помечена на удаление из результирующего меша - не генерим для неё индексы
+      if( occluders[ side ] != -1 )
+      {
+        indices[ idxCounter ] = cubeIndices[ i ] + vertCounter;
+
+        float* color = colors + indices[ idxCounter ] * 3;
+        float ao = 0.7f + 0.3f * ( 9 - occluders[ side ] ) / 9.;
+        color[ 0 ] = color[ 1 ] = color[ 2 ] = ao;
+
+        idxCounter++;
       }
+    }
+
+    for( size_t i = 0; i < cubeVerticesCount; i++ )
+    {
+      float* vert = vertices + vertCounter * 3;
+      vert[ 0 ] = cubePositions[ i ][ 0 ] + translation.x();
+      vert[ 1 ] = cubePositions[ i ][ 1 ] + translation.y();
+      vert[ 2 ] = cubePositions[ i ][ 2 ] + translation.z();
+
+      vertCounter++;
+    }
+
+
+  }
+
+  m_mesh.writeData( vertices, normals, texcoords, indices, colors,
+                    m_octree.getRoot()->blocks().size() * cubeVerticesCount,
+                    indicesSize );
+
+
 }
 
 void ShipModel::refreshModel()
 {
   m_octree.build( this );
 
-  recalculateAO();
+  buildMesh();
 }
 
 bool ShipModel::octreeIntersect( Vector3f rayStart, Vector3f rayDir, Intersection& intersection )
@@ -157,8 +245,6 @@ void ShipModel::loadFromFile( string fileName )
   }
 
   infile.close();
-
-  refreshModel();
 }
 
 

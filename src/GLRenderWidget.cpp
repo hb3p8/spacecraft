@@ -41,8 +41,6 @@ GLRenderWidget::~GLRenderWidget()
 
 GLuint texture;
 
-Mesh* cubeMesh;
-
 void GLRenderWidget::initializeGL()
 {
     QGLFormat glFormat = QGLWidget::format();
@@ -66,7 +64,6 @@ void GLRenderWidget::initializeGL()
     QImage texImage( QString( SPACECRAFT_PATH ) + "/images/default.png" );
     texture = bindTexture( texImage );
 
-    cubeMesh = new Mesh();
 
     // Bind the shader program so that we can associate variables from
     // our application to the shaders
@@ -76,7 +73,9 @@ void GLRenderWidget::initializeGL()
         return;
     }
 
-    cubeMesh->setAttributesToShader( m_shader );
+    m_shipModel.refreshModel();
+
+    m_shipModel.getMesh().setAttributesToShader( m_shader );
 
     m_shader.release();
 
@@ -131,13 +130,30 @@ void GLRenderWidget::paintGL()
     m_shader.enableAttributeArray( "position" );
     m_shader.enableAttributeArray( "normal" );
     m_shader.enableAttributeArray( "texcoord" );
+    m_shader.enableAttributeArray( "color" );
 
     // Draw stuff
 
     glBindTexture( GL_TEXTURE_2D, texture );
 
-    Octree& tree = m_shipModel.getOctree();
+//    Octree& tree = m_shipModel.getOctree();
+    Mesh& mesh = m_shipModel.getMesh();
+//    mesh.setAttributesToShader( m_shader );
 
+    modelMatrix.setToIdentity();
+    m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
+    m_shader.setUniformValue( "viewMatrix", viewMatrix );
+    m_shader.setUniformValue( "modelMatrix", modelMatrix );
+    m_shader.setUniformValue( "ambient", 0.8f );
+    m_shader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
+
+    if( minIntersection.side != SIDE_NO_INTERSECTION )
+    {
+      m_shader.setUniformValue( "point", point );
+    }
+
+    mesh.draw();
+/*
     for( BlockRef& block : tree.getRoot()->blocks() )
 //    for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
 //      for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
@@ -157,7 +173,7 @@ void GLRenderWidget::paintGL()
         m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
         m_shader.setUniformValue( "viewMatrix", viewMatrix );
         m_shader.setUniformValue( "modelMatrix", modelMatrix );
-        m_shader.setUniformValue( "ambient", 0.6f + 0.3f * block / 30.f );
+        m_shader.setUniformValue( "ambient", 0.8f );
 
         if( minIntersection.side != SIDE_NO_INTERSECTION )
         {
@@ -175,12 +191,13 @@ void GLRenderWidget::paintGL()
         cubeMesh->draw();
       }
     }
-
+*/
     glBindTexture( GL_TEXTURE_2D, 0 );
 
     m_shader.disableAttributeArray( "position" );
     m_shader.disableAttributeArray( "normal" );
     m_shader.disableAttributeArray( "texcoord" );
+    m_shader.disableAttributeArray( "color" );
 
     m_shader.release();
 
@@ -194,8 +211,8 @@ void GLRenderWidget::paintGL()
 
     if( minIntersection.side != SIDE_NO_INTERSECTION )
     {
-      int selectedBlock = m_shipModel.getBlock( minIntersection.i, minIntersection.j, minIntersection.k );
-      m_text.add( "lightness\t", selectedBlock );
+//      int selectedBlock = m_shipModel.getBlock( minIntersection.i, minIntersection.j, minIntersection.k );
+      m_text.add( "side\t", minIntersection.side );
     }
 
     m_text.draw( this, 10, 15 );

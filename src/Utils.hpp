@@ -5,7 +5,7 @@
 #include <QString>
 #include <QGLShaderProgram>
 
-#define SIDE_NO_INTERSECTION 7
+#define SIDE_NO_INTERSECTION 6
 
 struct Intersection
 {

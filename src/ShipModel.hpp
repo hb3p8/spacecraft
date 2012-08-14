@@ -4,6 +4,7 @@
 #include <Eigen/Eigen>
 #include "Octree.hpp"
 #include "Utils.hpp"
+#include "Mesh.hpp"
 
 
 #define SHIP_MAX_SIZE 32
@@ -23,15 +24,20 @@ public:
     void loadFromFile( std::string fileName );
 
     Octree& getOctree() { return m_octree; }
+    Mesh& getMesh() { return m_mesh; }
+
+
 
 private:
     Intersection traverse( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, OctreeNode& node );
-    void recalculateAO();
+
+    void buildMesh();
 
     BlockData m_blocks[SHIP_MAX_SIZE][SHIP_MAX_SIZE][SHIP_MAX_SIZE];
 
     Eigen::Vector3i m_center;
     Octree m_octree;
+    Mesh m_mesh;
 
 };
 
