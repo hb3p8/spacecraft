@@ -36,7 +36,6 @@ GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent ) :
 
 GLRenderWidget::~GLRenderWidget()
 {
-
 }
 
 GLuint texture;
@@ -50,8 +49,6 @@ void GLRenderWidget::initializeGL()
     // Set the clear color to black
     glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 
-
-
     // Prepare a complete shader program...
     if ( !prepareShaderProgram( m_shader, QString( SPACECRAFT_PATH ) + "/shaders/vert.glsl",
                                 QString( SPACECRAFT_PATH ) + "/shaders/frag.glsl" ) )
@@ -61,7 +58,7 @@ void GLRenderWidget::initializeGL()
     m_timer->start( 10 );
     connect( m_timer, SIGNAL( timeout() ), this, SLOT( updateGL() ) );
 
-    QImage texImage( QString( SPACECRAFT_PATH ) + "/images/default.png" );
+    QImage texImage( QString( SPACECRAFT_PATH ) + "/images/block_faces.png" );
     texture = bindTexture( texImage );
 
 
@@ -89,9 +86,13 @@ void GLRenderWidget::initializeGL()
     glEnable( GL_CULL_FACE );
     glCullFace( GL_BACK );
 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 }
 
 Intersection minIntersection;
+
+int blockToInsert = 1;
 
 void GLRenderWidget::paintGL()
 {
@@ -144,6 +145,8 @@ void GLRenderWidget::paintGL()
 //      int selectedBlock = m_shipModel.getBlock( minIntersection.i, minIntersection.j, minIntersection.k );
       m_text.add( "side\t", minIntersection.side );
     }
+
+    m_text.add( "block insert type\t", blockToInsert );
 
     m_text.draw( this, 10, 15 );
     m_text.clear();
@@ -293,7 +296,7 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
       m_shipModel.getBlock(
             minIntersection.i + offset[ 0 ],
             minIntersection.j + offset[ 1 ],
-            minIntersection.k + offset[ 2 ] ) = 1;
+            minIntersection.k + offset[ 2 ] ) = blockToInsert;
       m_shipModel.refreshModel();
     }
   break;
@@ -324,6 +327,19 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
     m_inputMap.insert( Qt::Key_D, true );
   break;
 
+  case Qt::Key_1:
+
+    blockToInsert = 1;
+  break;
+  case Qt::Key_2:
+
+    blockToInsert = 2;
+  break;
+  case Qt::Key_3:
+
+    blockToInsert = 3;
+  break;
+
   default:
     QGLWidget::keyPressEvent( e );
   }
@@ -334,26 +350,25 @@ void GLRenderWidget::keyReleaseEvent( QKeyEvent* e )
   switch ( e->key() )
   {
   case Qt::Key_W:
-  {
+
     m_inputMap.insert( Qt::Key_W, false );
-  }break;
+  break;
   case Qt::Key_S:
-  {
+
     m_inputMap.insert( Qt::Key_S, false );
-  }break;
+  break;
   case Qt::Key_A:
-  {
+
     m_inputMap.insert( Qt::Key_A, false );
-  }break;
+  break;
   case Qt::Key_D:
-  {
+
     m_inputMap.insert( Qt::Key_D, false );
-  }break;
+  break;
   case Qt::Key_Space:
-  {
+
     m_inputMap.insert( Qt::Key_Space, false );
-    break;
-  }
+  break;
 
   default:
     QGLWidget::keyReleaseEvent( e );

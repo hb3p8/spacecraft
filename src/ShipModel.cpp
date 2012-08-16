@@ -109,12 +109,15 @@ void ShipModel::buildMesh()
         indices[ idxCounter ] = cubeIndices[ i ] + vertCounter;
 
         float* color = colors + indices[ idxCounter ] * 3;
-        float ao = 0.7f + 0.3f * ( 9 - occluders[ side ] ) / 9.;
+        float ao = 0.6f + 0.4f * ( 9 - occluders[ side ] ) / 9.;
         color[ 0 ] = color[ 1 ] = color[ 2 ] = ao;
 
         idxCounter++;
       }
     }
+
+    int blockType = m_blocks[ i ][ j ][ k ] - 1;
+    float itemSize = 0.2;
 
     for( size_t i = 0; i < cubeVerticesCount; i++ )
     {
@@ -122,6 +125,30 @@ void ShipModel::buildMesh()
       vert[ 0 ] = cubePositions[ i ][ 0 ] + translation.x();
       vert[ 1 ] = cubePositions[ i ][ 1 ] + translation.y();
       vert[ 2 ] = cubePositions[ i ][ 2 ] + translation.z();
+
+
+      int idx = i % 4; // index in row
+      float* tex = texcoords + vertCounter * 2;
+      switch( idx )
+      {
+      case 0:
+        tex[ 0 ] = blockType * itemSize;
+        tex[ 1 ] = 1;
+        break;
+      case 1:
+        tex[ 0 ] = itemSize + blockType * itemSize;
+        tex[ 1 ] = 1;
+        break;
+      case 2:
+        tex[ 0 ] = itemSize + blockType * itemSize;
+        tex[ 1 ] = 0.8;
+        break;
+      case 3:
+        tex[ 0 ] = blockType * itemSize;
+        tex[ 1 ] = 0.8;
+        break;
+
+      }
 
       vertCounter++;
     }
@@ -207,7 +234,8 @@ void ShipModel::saveToFile( string fileName )
 
   for( BlockRef& block : blocks )
   {
-    outfile << block.i << "\t" << block.j << "\t" << block.k << endl;
+    outfile << block.i << "\t" << block.j << "\t" << block.k << "\t" <<
+               m_blocks[ block.i ][ block.j ][ block.k ] << endl;
   }
 
   outfile.close();
@@ -235,32 +263,18 @@ void ShipModel::loadFromFile( string fileName )
 
   for( size_t c = 0; c < size; c++ )
   {
-    int i, j, k;
+    int i, j, k, block;
 
     infile >> i;
     infile >> j;
     infile >> k;
+    infile >> block;
 
-    m_blocks[ i ][ j ][ k ] = 1;
+    m_blocks[ i ][ j ][ k ] = block;
   }
 
   infile.close();
 }
-
-
-//int clamp( int val, int lo, int hi )
-//{
-//  int result = val < lo ? lo : val;
-//  result = val > hi ? hi : val;
-//  return result;
-//}
-
-//Vector3i clamp( Vector3i vec, int lo, int hi )
-//{
-//  return Vector3i( clamp( vec.x(), lo, hi ),
-//                   clamp( vec.y(), lo, hi ),
-//                   clamp( vec.z(), lo, hi ) );
-//}
 
 
 

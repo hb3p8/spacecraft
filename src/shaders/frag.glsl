@@ -24,8 +24,8 @@ void main(void)
 	vec3 dpos = position - point;
 	float dist = sqrt( dot( dpos, dpos ) );
     // получим цвет пикселя из текстуры по текстурным координатам
-    color = ( vec4( 1.0 ) /*texture(colorTexture, fragTexcoord) + baseColor*/ ) *
-        ( 0.5 + 0.5*vec4( fragColor, 1.0 ) ) *
+    color = ( /*vec4( 1.0 )*/ texture(colorTexture, fragTexcoord) + baseColor ) *
+        vec4( fragColor, 1.0 ) *
         ( 0.6  + 0.2 * max( dot( norm, normalize( position - light ) ), 0.2 ) ) *
         ( dist < 0.08 ? vec4( 1.0, 0.0, 0.0, 1.0 ) : vec4( 1.0, 1.0, 1.0, 1.0 ) ) ;
 }
