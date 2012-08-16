@@ -373,8 +373,7 @@ void GLRenderWidget::mouseMoveEvent( QMouseEvent* event )
 
   if( ( event->buttons() & Qt::LeftButton ) | ( event->buttons() & Qt::RightButton ) )
   {
-    m_camera->rotate( AngleAxisf( -dx, Vector3f( 0.0, 1.0, 0.0 ) ) );
-    m_camera->rotate( AngleAxisf(  dy, Vector3f( 1.0, 0.0, 0.0 ) ) );
+    m_camera->eyeTurn( dx, dy );
   }
 
   m_lastMousePos = event->pos();

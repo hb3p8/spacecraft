@@ -1,28 +1,21 @@
 #include "Camera.hpp"
 
+#include <math.h>
+
 #include <QVector3D>
 
 using namespace Eigen;
 
-Camera::Camera ( const Eigen::Vector3f &position,
-                 const Eigen::Quaternionf &orientation ) :
-                                  m_position ( position ),
-                                  m_orientation ( orientation )
+Camera::Camera ( const Eigen::Vector3f &position, const Eigen::Vector3f &rotation):
+  m_position( position ),
+  m_curRotation( rotation )
 {
 }
 
-//------------------------------------------------------------------------
-
 Camera::Camera ( const Camera &camera ) :
-                                  m_position ( camera.m_position ),
-                                  m_orientation ( camera.m_orientation )
-//                                  m_offsetX ( camera._offsetX ),
-//                                  m_offsetY ( camera._offsetY ),
-//                                  m_width ( camera._width ),
-//                                  m_height ( camera._height ),
-//                                  m_nearPlane ( camera._nearPlane ),
-//                                  m_farPlane ( camera._farPlane ),
-//                                  m_fieldOfView ( camera._fieldOfView )
+  m_position ( camera.m_position ),
+  m_curRotation( camera.m_curRotation ),
+  m_rotation ( camera.m_rotation )
 {
 }
 
@@ -31,7 +24,7 @@ QMatrix4x4 Camera::projectionMatrix() const
   QMatrix4x4 matrix;
   matrix.setToIdentity();
   const float aspectRatio = 800. / 600.;
-  matrix.perspective( 45.0f, aspectRatio, 1.0f, 100.0f );
+  matrix.perspective( 45.0f, aspectRatio, 0.5f, 1000.0f );
 
   return matrix;
 }
@@ -59,80 +52,74 @@ QMatrix4x4 Camera::viewMatrix() const
   return matrix;
 }
 
-//------------------------------------------------------------------------
-
 Vector3f Camera::position() const
 {
   return m_position;
 }
-
-//------------------------------------------------------------------------
 
 void Camera::setPosition( const Vector3f &position )
 {
   m_position = position;
 }
 
-//------------------------------------------------------------------------
-
-Quaternionf Camera::orientation( void ) const
+AngleAxisf Camera::rotation() const
 {
-  return m_orientation;
+  return m_rotation;
 }
 
-//------------------------------------------------------------------------
-
-void Camera::setOrientation( const Quaternionf &orientation )
+void Camera::setRotation( const Vector3f& rotation )
 {
-  m_orientation = orientation;
+  m_rotation = AngleAxisf( rotation.z(), Vector3f::UnitZ() ) *
+              AngleAxisf( rotation.y(), Vector3f::UnitY() ) *
+              AngleAxisf( rotation.x(), Vector3f::UnitX() );
 }
 
-//------------------------------------------------------------------------
-
-
-void Camera::setOrientation( const AngleAxisf &orientation )
+void Camera::setRotation( const AngleAxisf& rotation )
 {
-  m_orientation = Quaternionf( orientation );
+  m_rotation = rotation;
 }
 
-//------------------------------------------------------------------------
-
-void Camera::rotate( const Quaternionf &delta )
+void Camera::eyeTurn( float dx, float dy )
 {
-  setOrientation( orientation() * delta );
+  m_curRotation.x() += dy;
+
+  // don't allow head to flip over
+  m_curRotation.x() = m_curRotation.x() < M_PI / 2 ? m_curRotation.x() : M_PI / 2;
+  m_curRotation.x() = m_curRotation.x() > -M_PI / 2 ? m_curRotation.x() : -M_PI / 2;
+
+  m_curRotation.y() -= dx;
+  if (m_curRotation.y() < -M_PI)
+    m_curRotation.y() += M_PI * 2;
+  if (m_curRotation.y() > M_PI)
+    m_curRotation.y() -= M_PI * 2;
+
+  setRotation( m_curRotation );
 }
 
-//------------------------------------------------------------------------
-
-void Camera::rotate( const Eigen::AngleAxisf &delta )
+void Camera::rotate( const Vector3f& delta )
 {
-  setOrientation( orientation() * Quaternionf( delta ) );
+  m_rotation = m_rotation *
+    AngleAxisf( delta.z(), Vector3f::UnitZ() ) *
+    AngleAxisf( delta.y(), Vector3f::UnitY() ) *
+    AngleAxisf( delta.x(), Vector3f::UnitX() );
 }
 
-//------------------------------------------------------------------------
-
-void Camera::translate( const Vector3f &delta )
+void Camera::translate( const Vector3f& delta )
 {
-  setPosition( position() + orientation() * delta );
+  m_position += m_rotation * delta;
 }
 
-//------------------------------------------------------------------------
-
-Vector3f Camera::view( void ) const
+Vector3f Camera::view() const
 {
-  return orientation() * Vector3f::UnitZ();
+  return ( m_rotation * Vector3f( 0, 0, 1 ) ).normalized();
 }
 
-//------------------------------------------------------------------------
-
-Vector3f Camera::up( void ) const
+Vector3f Camera::up() const
 {
-  return orientation() * Vector3f::UnitY();
+  return ( m_rotation * Vector3f( 0, 1, 0 ) ).normalized();
 }
 
-//------------------------------------------------------------------------
-
-Vector3f Camera::right( void ) const
+Vector3f Camera::right() const
 {
-  return orientation() * Vector3f::UnitX();
+  return ( m_rotation * Vector3f( 1, 0, 0 ) ).normalized();
 }
