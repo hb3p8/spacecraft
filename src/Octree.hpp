@@ -5,6 +5,8 @@
 #include <memory>
 #include <Eigen/Eigen>
 
+
+
 class ShipModel;
 
 struct BlockRef
@@ -43,6 +45,11 @@ private:
 
 class Octree
 {
+  enum
+  {
+    maxBlocksPerLeaf = 4
+  };
+
 public:
     Octree();
     ~Octree();

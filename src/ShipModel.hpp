@@ -17,7 +17,7 @@ public:
     ShipModel();
 
     inline BlockData& getBlock( int x, int y, int z ) { return m_blocks[ x ][ y ][ z ]; }
-    bool octreeIntersect( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, Intersection& intersection );
+    bool octreeRaycastIntersect( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, Intersection& intersection );
 
     void refreshModel();
     void saveToFile( std::string fileName );

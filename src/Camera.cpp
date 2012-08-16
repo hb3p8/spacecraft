@@ -24,7 +24,7 @@ QMatrix4x4 Camera::projectionMatrix() const
   QMatrix4x4 matrix;
   matrix.setToIdentity();
   const float aspectRatio = 800. / 600.;
-  matrix.perspective( 45.0f, aspectRatio, 0.5f, 1000.0f );
+  matrix.perspective( 45.0f, aspectRatio, 0.1f, 1000.0f );
 
   return matrix;
 }
@@ -106,7 +106,7 @@ void Camera::rotate( const Vector3f& delta )
 
 void Camera::translate( const Vector3f& delta )
 {
-  m_position += m_rotation * delta;
+  m_position += delta;
 }
 
 Vector3f Camera::view() const

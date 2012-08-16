@@ -143,7 +143,7 @@ void ShipModel::refreshModel()
   buildMesh();
 }
 
-bool ShipModel::octreeIntersect( Vector3f rayStart, Vector3f rayDir, Intersection& intersection )
+bool ShipModel::octreeRaycastIntersect( Vector3f rayStart, Vector3f rayDir, Intersection& intersection )
 {
   assert( m_octree.getRoot() != 0 );
   intersection = traverse( rayStart, rayDir, *m_octree.getRoot() );

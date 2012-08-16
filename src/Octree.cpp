@@ -52,8 +52,8 @@ void Octree::build( ShipModel* model )
 }
 
 void Octree::buildNode( OctreeNode* parent, int level )
-{
-  if( parent->blocks().size() < 10 )
+{ 
+  if( parent->blocks().size() < maxBlocksPerLeaf )
   {
     // leaf
     parent->makeLeaf();
@@ -98,6 +98,8 @@ void Octree::buildNode( OctreeNode* parent, int level )
           }
         }
 
+    if( parent != m_root )
+      parent->blocks().clear();
   }
 
 
