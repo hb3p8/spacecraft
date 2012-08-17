@@ -174,7 +174,7 @@ void GLRenderWidget::process()
   m_shipModel.octreeRaycastIntersect( m_camera->position(), downVec, moveIntersect );
   Vector3f toGround = downVec * moveIntersect.time;
 //  Vector3f point = m_camera->position() + toGround;
-  if( minIntersection.intersected() )
+  if( moveIntersect.intersected() )
   {
     float sqrDist = toGround.dot( toGround );
     if( sqrDist > 9.0 + 0.1 ) velocity.y() += -0.02;
@@ -199,7 +199,7 @@ void GLRenderWidget::process()
 
   m_shipModel.octreeRaycastIntersect( m_camera->position() + downVec * 2.0, viewVec, moveIntersect );
   Vector3f toWall = viewVec * moveIntersect.time;
-  if( minIntersection.intersected() )
+  if( moveIntersect.intersected() )
   {
     float sqrDist = toWall.dot( toWall );
     if( sqrDist < 1.5 )
