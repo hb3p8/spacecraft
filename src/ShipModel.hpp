@@ -4,12 +4,20 @@
 #include <Eigen/Eigen>
 #include "Octree.hpp"
 #include "Utils.hpp"
-#include "Mesh.hpp"
+#include "IndexedMesh.hpp"
 
 
 #define SHIP_MAX_SIZE 32
 
-typedef unsigned int BlockData;
+struct BlockData
+{
+  unsigned int blockType;
+  unsigned char orientation; // интерпретируется как side
+
+  BlockData(): blockType( 0 ), orientation( 0 ) {}
+
+  inline bool isEmpty() { return blockType == 0; }
+};
 
 class ShipModel
 {
@@ -24,7 +32,7 @@ public:
     void loadFromFile( std::string fileName );
 
     Octree& getOctree() { return m_octree; }
-    Mesh& getMesh() { return m_mesh; }
+    IndexedMesh& getMesh() { return m_mesh; }
 
 
 
@@ -37,7 +45,7 @@ private:
 
     Eigen::Vector3i m_center;
     Octree m_octree;
-    Mesh m_mesh;
+    IndexedMesh m_mesh;
 
 };
 

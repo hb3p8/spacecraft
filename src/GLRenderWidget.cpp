@@ -7,7 +7,6 @@
 #include <QImage>
 #include <QFile>
 
-#include "Mesh.hpp"
 #include "Utils.hpp"
 
 #include <memory>
@@ -38,7 +37,8 @@ GLRenderWidget::~GLRenderWidget()
 {
 }
 
-GLuint texture;
+//GLuint texture;
+QMap<std::string, GLuint> textures;
 
 void GLRenderWidget::initializeGL()
 {
@@ -46,25 +46,31 @@ void GLRenderWidget::initializeGL()
     if ( !glFormat.sampleBuffers() )
         qWarning() << "Could not enable sample buffers";
 
-    // Set the clear color to black
     glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 
-    // Prepare a complete shader program...
-    if ( !prepareShaderProgram( m_shader, QString( SPACECRAFT_PATH ) + "/shaders/vert.glsl",
-                                QString( SPACECRAFT_PATH ) + "/shaders/frag.glsl" ) )
-        return;
+    if ( !prepareShaderProgram( m_cubeShader,
+                                QString( SPACECRAFT_PATH ) + "/shaders/cube.vert",
+                                QString( SPACECRAFT_PATH ) + "/shaders/cube.frag" ) )
+      return;
+
+    if ( !prepareShaderProgram( m_starShader,
+                                QString( SPACECRAFT_PATH ) + "/shaders/stars.vert",
+                                QString( SPACECRAFT_PATH ) + "/shaders/stars.frag" ) )
+      return;
 
     m_timer = new QTimer( this );
     m_timer->start( 10 );
     connect( m_timer, SIGNAL( timeout() ), this, SLOT( updateGL() ) );
 
-    QImage texImage( QString( SPACECRAFT_PATH ) + "/images/block_faces.png" );
-    texture = bindTexture( texImage );
+    QImage starsImage( QString( SPACECRAFT_PATH ) + "/images/stars.jpg" );
+    starsImage.setAlphaChannel( QImage( QString( SPACECRAFT_PATH ) + "/images/starsAlpha.jpg" ) );
+    textures.insert( "stars", bindTexture( starsImage ) );
+
+    QImage blocksImage( QString( SPACECRAFT_PATH ) + "/images/block_faces.png" );
+    textures.insert( "block_faces", bindTexture( blocksImage ) );
 
 
-    // Bind the shader program so that we can associate variables from
-    // our application to the shaders
-    if ( !m_shader.bind() )
+    if ( !m_cubeShader.bind() )
     {
         qWarning() << "Could not bind shader program to context";
         return;
@@ -72,19 +78,26 @@ void GLRenderWidget::initializeGL()
 
     m_shipModel.refreshModel();
 
-    m_shipModel.getMesh().setAttributesToShader( m_shader );
+    buildStarMesh();
+    m_starMesh.setAttributesToShader( m_starShader );
 
-    m_shader.release();
+    m_shipModel.getMesh().setAttributesToShader( m_cubeShader );
+
+    m_cubeShader.release();
 
 
     m_fpsTime->start();
     m_workTime->start();
 
-    m_camera->setPosition( Eigen::Vector3f( 0.0, 5.0, 2.0 ) );
+    m_camera->setPosition( Eigen::Vector3f( 0.0, 5.5, 2.5 ) );
 
     glEnable( GL_DEPTH_TEST );
     glEnable( GL_CULL_FACE );
     glCullFace( GL_BACK );
+
+    // Enable blending
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -109,30 +122,49 @@ void GLRenderWidget::paintGL()
     QMatrix4x4 modelMatrix;
     QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
     QMatrix4x4 viewMatrix( m_camera->viewMatrix() );
+    QMatrix4x4 viewStarMatrix( viewMatrix );
 
-    m_shader.bind();
+    // зануляем translation часть в видовой матрице для звёзд
+    viewStarMatrix.setColumn( 3, QVector4D( 0.0, 0.0, 0.0, 1.0 ) );
 
-    // Draw stuff
+    viewStarMatrix.scale( 10.0 );
 
-    glBindTexture( GL_TEXTURE_2D, texture );
+    m_starShader.bind();
 
-    Mesh& mesh = m_shipModel.getMesh();
+    glBindTexture( GL_TEXTURE_2D, textures.find( "stars" ).value() );
+
+    glDisable( GL_DEPTH_TEST );
+
+    m_starShader.setUniformValue( "projectionMatrix", projectionMatrix );
+    m_starShader.setUniformValue( "viewMatrix", viewStarMatrix );
+    m_starShader.setUniformValue( "colorTexture", 0 );
+
+    m_starMesh.draw();
+    m_starShader.release();
+
+    glEnable( GL_DEPTH_TEST );
+
+    m_cubeShader.bind();
+
+    glBindTexture( GL_TEXTURE_2D, textures.find( "block_faces" ).value() );
+
+    IndexedMesh& mesh = m_shipModel.getMesh();
 
     modelMatrix.setToIdentity();
-    m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
-    m_shader.setUniformValue( "viewMatrix", viewMatrix );
-    m_shader.setUniformValue( "modelMatrix", modelMatrix );
-    m_shader.setUniformValue( "ambient", 0.8f );
-    m_shader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
-    m_shader.setUniformValue( "point", point );
-    m_shader.setUniformValue( "colorTexture", 0 );
+    m_cubeShader.setUniformValue( "projectionMatrix", projectionMatrix );
+    m_cubeShader.setUniformValue( "viewMatrix", viewMatrix );
+    m_cubeShader.setUniformValue( "modelMatrix", modelMatrix );
+    m_cubeShader.setUniformValue( "ambient", 0.8f );
+    m_cubeShader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
+    m_cubeShader.setUniformValue( "point", point );
+    m_cubeShader.setUniformValue( "colorTexture", 0 );
 
 
     mesh.draw();
 
     glBindTexture( GL_TEXTURE_2D, 0 );
 
-    m_shader.release();    
+    m_cubeShader.release();
 
 
     process();
@@ -269,6 +301,133 @@ void GLRenderWidget::applyInput()
 
 }
 
+const int STAR_COUNT = 800;
+const float PATCH_SIZE = 0.8;
+
+void GLRenderWidget::buildStarMesh()
+{
+  float* vertices;
+  float* normals;
+  float* texcoords;
+
+  size_t verticesSize = STAR_COUNT * 6 * 3;
+  size_t texcoordsSize = STAR_COUNT * 6 * 2;
+
+  vertices = new float[ verticesSize ];
+  normals = new float[ verticesSize ];
+  texcoords = new float[ texcoordsSize ];
+
+  std::vector< Vector2f > quadTex;
+  quadTex.push_back( Vector2f( 0.0, 1.0 ) );
+  quadTex.push_back( Vector2f( 1.0, 1.0 ) );
+  quadTex.push_back( Vector2f( 1.0, 0.0 ) );
+  quadTex.push_back( Vector2f( 0.0, 0.0 ) );
+
+
+  int indices[] = { 0, 3, 1, 1, 3, 2 };
+  int vertCounter = 0;
+
+  int ranseq = 123;
+  for ( int s = 0; s < STAR_COUNT; s++ )
+  {
+    // get a random point, normalize for center of patch
+    Vector3f eye;
+
+    int p = (ranseq++) * 17;
+    p = (p<<13) ^ p;
+    eye.x() = 1.0 - ((p * (p * p * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0;
+    eye.y() = 1.0 - ((p * (p * p * 14983 + 825193) + 1376312589) & 0x7fffffff) / 1073741824.0;
+    eye.z() = 1.0 - ((p * (p * p * 23431 + 830237) + 1376312589) & 0x7fffffff) / 1073741824.0;
+    eye.normalize();
+
+    // get a second random point
+    Vector3f xaxis;
+
+    p = (ranseq++) * 17;
+    p = (p<<13) ^ p;
+    xaxis.x() = 1.0 - ((p * (p * p * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0;
+    xaxis.y() = 1.0 - ((p * (p * p * 14983 + 825193) + 1376312589) & 0x7fffffff) / 1073741824.0;
+    xaxis.z() = 1.0 - ((p * (p * p * 23431 + 830237) + 1376312589) & 0x7fffffff) / 1073741824.0;
+
+    // cross with eye to get two axis
+    xaxis = xaxis.cross(eye);
+    xaxis.normalize();
+    Vector3f yaxis(xaxis);
+    yaxis = yaxis.cross(eye);
+
+    // randomly flip the axis to cut down on visible repetition
+    p = (ranseq++) * 17;
+    p = (p<<13) ^ p;
+    bool xflip = 0 < (1.0 - ((p * (p * p * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0);
+    bool yflip = 0 < (1.0 - ((p * (p * p * 14983 + 825193) + 1376312589) & 0x7fffffff) / 1073741824.0);
+
+    // build corner points
+    Vector3f normal(eye);
+    normal *= -1;
+    xaxis *= PATCH_SIZE;
+    if (xflip)
+      xaxis *= -1;
+    yaxis *= PATCH_SIZE;
+    if (yflip)
+      yaxis *= -1;
+    eye *= 0.49;
+
+    std::vector< Vector3f > quadVerts;
+    quadVerts.push_back( eye );
+    quadVerts[ quadVerts.size() - 1 ] -= xaxis;
+    quadVerts[ quadVerts.size() - 1 ] += yaxis;
+
+    quadVerts.push_back( eye );
+    quadVerts[ quadVerts.size() - 1 ] += xaxis;
+    quadVerts[ quadVerts.size() - 1 ] += yaxis;
+
+    quadVerts.push_back( eye );
+    quadVerts[ quadVerts.size() - 1 ] += xaxis;
+    quadVerts[ quadVerts.size() - 1 ] -= yaxis;
+
+    quadVerts.push_back( eye );
+    quadVerts[ quadVerts.size() - 1 ] -= xaxis;
+    quadVerts[ quadVerts.size() - 1 ] -= yaxis;
+
+
+    for( int i = 0; i < 6; i++ )
+    {
+      int idx = indices[ i ];
+      float* vertex = vertices + vertCounter * 3;
+      Vector3f current = quadVerts[ idx ] + eye * 10;
+      vertex[ 0 ] = current.x();
+      vertex[ 1 ] = current.y();
+      vertex[ 2 ] = current.z();
+
+      float* norm = normals + vertCounter * 3;
+      norm[ 0 ] = normal.x();
+      norm[ 1 ] = normal.y();
+      norm[ 2 ] = normal.z();
+
+      float* tex = texcoords + vertCounter * 2;
+      tex[ 0 ] = quadTex[ idx ].x();
+      tex[ 1 ] = quadTex[ idx ].y();
+
+      vertCounter++;
+    }
+
+  }
+
+  m_starMesh.allocateBuffers( vertices, normals, texcoords, vertCounter );
+
+//  for( int i = 0; i < vertCounter * 3; i++ )
+//  {
+//    if( i % 3 == 0 ) std::cout << std::endl;
+//    std::cout << vertices[ i ] << std::endl;
+//  }
+
+
+  delete[] vertices;
+  delete[] normals;
+  delete[] texcoords;
+
+}
+
 void GLRenderWidget::keyPressEvent( QKeyEvent* e )
 {
   static bool wireframeMode = false;
@@ -296,7 +455,7 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
       m_shipModel.getBlock(
             minIntersection.i + offset[ 0 ],
             minIntersection.j + offset[ 1 ],
-            minIntersection.k + offset[ 2 ] ) = blockToInsert;
+            minIntersection.k + offset[ 2 ] ).blockType = blockToInsert;
       m_shipModel.refreshModel();
     }
   break;
@@ -306,7 +465,7 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
       m_shipModel.getBlock(
             minIntersection.i,
             minIntersection.j,
-            minIntersection.k ) = 0;
+            minIntersection.k ).blockType = 0;
       m_shipModel.refreshModel();
     }
  break;
@@ -328,17 +487,18 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
   break;
 
   case Qt::Key_1:
-
     blockToInsert = 1;
   break;
   case Qt::Key_2:
-
     blockToInsert = 2;
   break;
   case Qt::Key_3:
-
     blockToInsert = 3;
   break;
+  case Qt::Key_4:
+    blockToInsert = 4;
+  break;
+
 
   default:
     QGLWidget::keyPressEvent( e );
@@ -411,3 +571,5 @@ void GLRenderWidget::nextFrame()
     m_fpsTime->restart();
   }
 }
+
+

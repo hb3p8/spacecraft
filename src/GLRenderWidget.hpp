@@ -12,6 +12,8 @@
 #include "TextRender.hpp"
 #include "Camera.hpp"
 #include "ShipModel.hpp"
+#include "IndexedMesh.hpp"
+#include "SimpleMesh.hpp"
 
 typedef QMap< Qt::Key, bool > InputMap;
 
@@ -41,11 +43,13 @@ private slots:
 
 private:
     void nextFrame();
+    void buildStarMesh();
 
     static const int defaultXSize = 800;
     static const int defaultYSize = 600;
 
-    QGLShaderProgram m_shader;
+    QGLShaderProgram m_cubeShader;
+    QGLShaderProgram m_starShader;
 
     QTimer* m_timer;
 
@@ -65,6 +69,8 @@ private:
     InputMap m_inputMap;
 
     ShipModel m_shipModel;
+
+    SimpleMesh m_starMesh;
 
 };
 

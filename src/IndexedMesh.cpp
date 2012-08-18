@@ -1,6 +1,6 @@
-#include "Mesh.hpp"
+#include "IndexedMesh.hpp"
 
-Mesh::Mesh():
+IndexedMesh::IndexedMesh():
   m_vertexBuffer( QGLBuffer::VertexBuffer ),
   m_normalBuffer( QGLBuffer::VertexBuffer ),
   m_texcoordBuffer( QGLBuffer::VertexBuffer ),
@@ -11,16 +11,16 @@ Mesh::Mesh():
 
 }
 
-Mesh* Mesh::CreateCube()
+IndexedMesh* IndexedMesh::CreateCube()
 {
-  Mesh* cube = new Mesh();
+  IndexedMesh* cube = new IndexedMesh();
   cube->allocateBuffers( cubePositions, cubeNormals, cubeTexcoords,
                          cubeIndices, cubeColors, cubeVerticesCount, cubeIndicesCount );
 
   return cube;
 }
 
-void Mesh::allocateBuffers( const void* positionsData, const void* normalsData,
+void IndexedMesh::allocateBuffers( const void* positionsData, const void* normalsData,
                             const void* texcoordsData, const void* indicesData, const void* colorsData,
                             size_t verticesCount, size_t indicesCount )
 {
@@ -83,7 +83,7 @@ void Mesh::allocateBuffers( const void* positionsData, const void* normalsData,
   m_allocated = true;
 }
 
-void Mesh::writeData( const void *positionsData, const void *normalsData, const void *texcoordsData,
+void IndexedMesh::writeData( const void *positionsData, const void *normalsData, const void *texcoordsData,
                       const void *indicesData, const void *colorsData, uint32_t verticesCount, uint32_t indicesCount )
 {
   // TODO: write почему-то не работает
@@ -114,7 +114,7 @@ void Mesh::writeData( const void *positionsData, const void *normalsData, const 
 
 }
 
-void Mesh::setAttributesToShader( QGLShaderProgram& shader )
+void IndexedMesh::setAttributesToShader( QGLShaderProgram& shader )
 {
   m_shaderProgram = &shader;
 
@@ -137,7 +137,7 @@ void Mesh::setAttributesToShader( QGLShaderProgram& shader )
   m_colorBuffer.release();
 }
 
-void Mesh::draw()
+void IndexedMesh::draw()
 {
   if( !m_allocated ) return;
 

@@ -1,5 +1,5 @@
-#ifndef MESH_H
-#define MESH_H
+#ifndef INDEXED_MESH_H
+#define INDEXED_MESH_H
 
 #include <QGLBuffer>
 #include <QGLShader>
@@ -75,12 +75,12 @@ const uint32_t cubeIndices[cubeIndicesCount] = {
         20,23,21, 21,23,22  // right 3
 };
 
-class Mesh
+class IndexedMesh
 {
 public:
-    Mesh();
+    IndexedMesh();
 
-    static Mesh* CreateCube();
+    static IndexedMesh* CreateCube();
 
     void writeData( const void* positionsData, const void* normalsData,
                     const void* texcoordsData, const void* indicesData, const void* colorsData,
@@ -106,4 +106,4 @@ private:
     size_t m_indicesCount;
 };
 
-#endif // MESH_H
+#endif // INDEXED_MESH_H

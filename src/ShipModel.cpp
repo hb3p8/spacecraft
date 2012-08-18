@@ -6,6 +6,15 @@
 using namespace Eigen;
 using namespace std;
 
+const int numBlockTypes = 4;
+int blockSpecs[ numBlockTypes ][ 6 ] =
+{
+  { 0, 0, 0, 0, 0, 0 }, // hull
+  { 1, 1, 1, 1, 1, 1 }, // armor
+  { 2, 2, 2, 2, 2, 2 }, // power
+  { 2, 0, 0, 0, 0, 0 }  // engine
+};
+
 ShipModel::ShipModel()
 {
   int center = SHIP_MAX_SIZE / 2;
@@ -16,9 +25,9 @@ ShipModel::ShipModel()
       for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
       {
         if( /*j < 4 && i < 4 && k < 4 */ ( j == 0 ) /*|| ( j < 3 && rand() % 10 > 6 ) */ )
-          m_blocks[ i ][ j ][ k ] = 1;
+          m_blocks[ i ][ j ][ k ].blockType = 1;
         else
-          m_blocks[ i ][ j ][ k ] = 0;
+          m_blocks[ i ][ j ][ k ].blockType = 0;
       }
 
 //  refreshModel();
@@ -74,9 +83,9 @@ void ShipModel::buildMesh()
             // если сторона ещё не помечена и по offset'у расположен блок
             if( occluders[ axisToSideRemap[ index ] ] >= 0 )
             {
-              if( m_blocks[ i + offset[ 0 ] ]
-                          [ j + offset[ 1 ] ]
-                          [ k + offset[ 2 ] ] > 0 )
+              if( !m_blocks[ i + offset[ 0 ] ]
+                           [ j + offset[ 1 ] ]
+                           [ k + offset[ 2 ] ].isEmpty() )
               {
                 // если окклюдер прямо напротив блока, помечаем сторону на удаление
                 if( ( offset[ ( axis ) % 3 ] == 0 ) &&  ( offset[ ( axis + 1 ) % 3 ] == 0 ) )
@@ -93,31 +102,53 @@ void ShipModel::buildMesh()
     int rowToSideRemap[ 6 ] = { 5, 2, 4, 1, 0, 3 };
 
     memcpy( normals + vertCounter * 3, cubeNormals, cubeVerticesCount * 3 * sizeof( float ) );
-    memcpy( texcoords + vertCounter * 2, cubeTexcoords, cubeVerticesCount * 2 * sizeof( float ) );
-    memcpy( colors + vertCounter * 3, cubeColors, cubeVerticesCount * 3 * sizeof( float ) );
 
     Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
 
-    for( size_t i = 0; i < cubeIndicesCount; i++ )
+    float itemSize = 0.2;
+
+    for( size_t x = 0; x < cubeIndicesCount; x++ )
     {
-      int row = i / 6;
+      int row = x / 6;
       int side = rowToSideRemap[ row ];
 
       // если сторона помечена на удаление из результирующего меша - не генерим для неё индексы
       if( occluders[ side ] != -1 )
       {
-        indices[ idxCounter ] = cubeIndices[ i ] + vertCounter;
+        indices[ idxCounter ] = cubeIndices[ x ] + vertCounter;
 
         float* color = colors + indices[ idxCounter ] * 3;
         float ao = 0.6f + 0.4f * ( 9 - occluders[ side ] ) / 9.;
         color[ 0 ] = color[ 1 ] = color[ 2 ] = ao;
 
+        int blockId = m_blocks[ i ][ j ][ k ].blockType - 1;
+        int subTexId = blockSpecs[ blockId ][ side ];
+
+        int idx = indices[ idxCounter ] % 4;
+        float* tex = texcoords + indices[ idxCounter ] * 2;
+        switch( idx )
+        {
+        case 0:
+          tex[ 0 ] = subTexId * itemSize;
+          tex[ 1 ] = 1;
+          break;
+        case 1:
+          tex[ 0 ] = itemSize + subTexId * itemSize;
+          tex[ 1 ] = 1;
+          break;
+        case 2:
+          tex[ 0 ] = itemSize + subTexId * itemSize;
+          tex[ 1 ] = 0.8;
+          break;
+        case 3:
+          tex[ 0 ] = subTexId * itemSize;
+          tex[ 1 ] = 0.8;
+          break;
+        }
+
         idxCounter++;
       }
     }
-
-    int blockType = m_blocks[ i ][ j ][ k ] - 1;
-    float itemSize = 0.2;
 
     for( size_t i = 0; i < cubeVerticesCount; i++ )
     {
@@ -125,30 +156,6 @@ void ShipModel::buildMesh()
       vert[ 0 ] = cubePositions[ i ][ 0 ] + translation.x();
       vert[ 1 ] = cubePositions[ i ][ 1 ] + translation.y();
       vert[ 2 ] = cubePositions[ i ][ 2 ] + translation.z();
-
-
-      int idx = i % 4; // index in row
-      float* tex = texcoords + vertCounter * 2;
-      switch( idx )
-      {
-      case 0:
-        tex[ 0 ] = blockType * itemSize;
-        tex[ 1 ] = 1;
-        break;
-      case 1:
-        tex[ 0 ] = itemSize + blockType * itemSize;
-        tex[ 1 ] = 1;
-        break;
-      case 2:
-        tex[ 0 ] = itemSize + blockType * itemSize;
-        tex[ 1 ] = 0.8;
-        break;
-      case 3:
-        tex[ 0 ] = blockType * itemSize;
-        tex[ 1 ] = 0.8;
-        break;
-
-      }
 
       vertCounter++;
     }
@@ -160,6 +167,11 @@ void ShipModel::buildMesh()
                     m_octree.getRoot()->blocks().size() * cubeVerticesCount,
                     indicesSize );
 
+  delete[] vertices;
+  delete[] normals;
+  delete[] texcoords;
+  delete[] colors;
+  delete[] indices;
 
 }
 
@@ -235,7 +247,7 @@ void ShipModel::saveToFile( string fileName )
   for( BlockRef& block : blocks )
   {
     outfile << block.i << "\t" << block.j << "\t" << block.k << "\t" <<
-               m_blocks[ block.i ][ block.j ][ block.k ] << endl;
+               m_blocks[ block.i ][ block.j ][ block.k ].blockType << endl;
   }
 
   outfile.close();
@@ -248,7 +260,7 @@ void ShipModel::loadFromFile( string fileName )
     for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
       for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
       {
-          m_blocks[ i ][ j ][ k ] = 0;
+          m_blocks[ i ][ j ][ k ].blockType = 0;
       }
 
   ifstream infile;
@@ -270,7 +282,7 @@ void ShipModel::loadFromFile( string fileName )
     infile >> k;
     infile >> block;
 
-    m_blocks[ i ][ j ][ k ] = block;
+    m_blocks[ i ][ j ][ k ].blockType = block;
   }
 
   infile.close();

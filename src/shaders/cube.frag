@@ -28,4 +28,5 @@ void main(void)
         vec4( fragColor, 1.0 ) *
         ( 0.6  + 0.2 * max( dot( norm, normalize( position - light ) ), 0.2 ) ) *
         ( dist < 0.08 ? vec4( 1.0, 0.0, 0.0, 1.0 ) : vec4( 1.0, 1.0, 1.0, 1.0 ) ) ;
+    color.w = 1.0;
 }
