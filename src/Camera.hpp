@@ -21,6 +21,9 @@ public:
 
   Camera ( const Camera &camera );
 
+  void viewportResize( int width, int height ) { m_width = width; m_height = height; }
+  void setFieldOfView( float FOV ) { m_fieldOfView = FOV; }
+
   QMatrix4x4 projectionMatrix() const;
   QMatrix4x4 viewMatrix() const;
 
@@ -44,12 +47,18 @@ public:
   Eigen::Vector3f up() const;
   Eigen::Vector3f right() const;
 
-protected:
+private:
 
   Eigen::Vector3f m_position;
 
   Eigen::Vector3f m_curRotation;
   Eigen::AngleAxisf m_rotation;
+
+  float m_width;
+  float m_height;
+  float m_fieldOfView;
+  float m_near;
+  float m_far;
 };
 
 typedef std::shared_ptr< Camera > CameraPtr;

@@ -35,15 +35,15 @@ void Octree::build( ShipModel* model )
 
   m_root = new OctreeNode();
 
-  for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
-    for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
-      for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
+  for( size_t i = 0; i < model->getSize(); i++ )
+    for( size_t j = 0; j < model->getSize(); j++ )
+      for( size_t k = 0; k < model->getSize(); k++ )
       {
         if( !model->getBlock( i, j, k ).isEmpty() )
           m_root->blocks().push_back( BlockRef( i, j, k ) );
       }
 
-  m_root->maxBorder = Vector3i( SHIP_MAX_SIZE - 1, SHIP_MAX_SIZE - 1, SHIP_MAX_SIZE - 1 );
+  m_root->maxBorder = Vector3i( model->getSize() - 1, model->getSize() - 1, model->getSize() - 1 );
   m_root->minBorder = Vector3i( 0, 0, 0 );
 
   buildNode( m_root, 0 );

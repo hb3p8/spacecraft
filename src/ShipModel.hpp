@@ -7,7 +7,7 @@
 #include "IndexedMesh.hpp"
 
 
-#define SHIP_MAX_SIZE 32
+#define SHIP_MAX_SIZE_DEFAULT 40
 
 struct BlockData
 {
@@ -22,17 +22,21 @@ struct BlockData
 class ShipModel
 {
 public:
-    ShipModel();
+    ShipModel( size_t size = SHIP_MAX_SIZE_DEFAULT );
+    ~ShipModel();
 
-    inline BlockData& getBlock( int x, int y, int z ) { return m_blocks[ x ][ y ][ z ]; }
+    inline BlockData& getBlock( int x, int y, int z ) { return *( m_blocks + x + m_size * y + m_size * m_size * z ); }
     bool octreeRaycastIntersect( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, Intersection& intersection );
 
     void refreshModel();
     void saveToFile( std::string fileName );
     void loadFromFile( std::string fileName );
 
+    void optimize();
+
     Octree& getOctree() { return m_octree; }
     IndexedMesh& getMesh() { return m_mesh; }
+    size_t getSize() { return m_size; }
 
 
 
@@ -41,7 +45,9 @@ private:
 
     void buildMesh();
 
-    BlockData m_blocks[SHIP_MAX_SIZE][SHIP_MAX_SIZE][SHIP_MAX_SIZE];
+    BlockData* m_blocks;
+
+    size_t m_size;
 
     Eigen::Vector3i m_center;
     Octree m_octree;

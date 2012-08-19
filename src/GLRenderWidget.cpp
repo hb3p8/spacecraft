@@ -257,6 +257,7 @@ void GLRenderWidget::resizeGL( int w, int h )
 {
     // Set the viewport to window dimensions
     glViewport( 0, 0, w, qMax( h, 1 ) );
+    m_camera->viewportResize( w, qMax( h, 1 ) );
 }
 
 void GLRenderWidget::applyInput()
@@ -298,7 +299,7 @@ void GLRenderWidget::applyInput()
   {
     if( !isJumping )
     {
-      velocity.y() += 0.5;
+      velocity.y() += 0.35;
       justJumped = true;
       isJumping = true;
     }

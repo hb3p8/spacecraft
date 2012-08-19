@@ -15,22 +15,27 @@ int blockSpecs[ numBlockTypes ][ 6 ] =
   { 2, 0, 0, 0, 0, 0 }  // engine
 };
 
-ShipModel::ShipModel()
+ShipModel::ShipModel( size_t size ): m_size( size )
 {
-  int center = SHIP_MAX_SIZE / 2;
+  int center = m_size / 2;
   m_center = Vector3i( center, center, center );
 
-  for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
-    for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
-      for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
+  m_blocks = new BlockData[ m_size * m_size * m_size ];
+
+  for( size_t i = 0; i < m_size; i++ )
+    for( size_t j = 0; j < m_size; j++ )
+      for( size_t k = 0; k < m_size; k++ )
       {
         if( /*j < 4 && i < 4 && k < 4 */ ( j == 0 ) /*|| ( j < 3 && rand() % 10 > 6 ) */ )
-          m_blocks[ i ][ j ][ k ].blockType = 1;
+          getBlock( i, j, k ).blockType = 1;
         else
-          m_blocks[ i ][ j ][ k ].blockType = 0;
+          getBlock( i, j, k ).blockType = 0;
       }
+}
 
-//  refreshModel();
+ShipModel::~ShipModel()
+{
+  delete[] m_blocks;
 }
 
 void ShipModel::buildMesh()
@@ -79,7 +84,7 @@ void ShipModel::buildMesh()
           int offset[3] = { x, y, z };
 
           if( ( i + x < 0 ) || ( j + y < 0 ) || ( k + z < 0 ) ||
-              ( i + x >= SHIP_MAX_SIZE ) || ( j + y >= SHIP_MAX_SIZE ) || ( k + z >= SHIP_MAX_SIZE ) )
+              ( i + x >= m_size ) || ( j + y >= m_size ) || ( k + z >= m_size ) )
             continue;
 
           for( int axis = 1; axis <= 3; axis++ )
@@ -89,9 +94,9 @@ void ShipModel::buildMesh()
             // если сторона ещё не помечена и по offset'у расположен блок
             if( occluders[ axisToSideRemap[ index ] ] >= 0 )
             {
-              if( !m_blocks[ i + offset[ 0 ] ]
-                           [ j + offset[ 1 ] ]
-                           [ k + offset[ 2 ] ].isEmpty() )
+              if( !getBlock( i + offset[ 0 ],
+                             j + offset[ 1 ],
+                             k + offset[ 2 ] ).isEmpty() )
               {
                 // если окклюдер прямо напротив блока, помечаем сторону на удаление
                 if( ( offset[ ( axis ) % 3 ] == 0 ) &&  ( offset[ ( axis + 1 ) % 3 ] == 0 ) )
@@ -110,7 +115,7 @@ void ShipModel::buildMesh()
 
     Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
 
-    BlockData& block = m_blocks[ i ][ j ][ k ];
+    BlockData& block = getBlock( i, j, k );
 
     float itemSize = 0.2;
 
@@ -256,13 +261,13 @@ void ShipModel::saveToFile( string fileName )
 
   vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
 
-  outfile << SHIP_MAX_SIZE << endl;
+  outfile << m_size << endl;
   outfile << blocks.size() << endl;
 
 
   for( BlockRef& block : blocks )
   {
-    BlockData& blockData = m_blocks[ block.i ][ block.j ][ block.k ];
+    BlockData& blockData = getBlock( block.i, block.j, block.k );
     outfile << block.i << "\t" << block.j << "\t" << block.k << "\t" <<
                blockData.blockType << "\t" << blockData.orientation << endl;
   }
@@ -275,9 +280,9 @@ void ShipModel::loadFromFile( string fileName )
   ifstream infile;
   infile.open( fileName );
 
-  int worldDim;
+  size_t worldDim;
   infile >> worldDim;
-  if( worldDim != SHIP_MAX_SIZE )
+  if( worldDim != m_size )
   {
     qWarning() << "Size doesn't match. Loading canceled.";
     infile.close();
@@ -285,10 +290,10 @@ void ShipModel::loadFromFile( string fileName )
   }
 
   // clean
-  for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
-    for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
-      for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
-          m_blocks[ i ][ j ][ k ].blockType = 0;
+  for( size_t i = 0; i < m_size; i++ )
+    for( size_t j = 0; j < m_size; j++ )
+      for( size_t k = 0; k < m_size; k++ )
+          getBlock( i, j, k ).blockType = 0;
 
 
   size_t size;
@@ -305,12 +310,56 @@ void ShipModel::loadFromFile( string fileName )
     infile >> blockType;
     infile >> blockOrient;
 
-    m_blocks[ i ][ j ][ k ].blockType = blockType;
-    m_blocks[ i ][ j ][ k ].orientation = blockOrient;
+    getBlock( i, j, k ).blockType = blockType;
+    getBlock( i, j, k ).orientation = blockOrient;
   }
 
   infile.close();
 }
+
+void ShipModel::optimize()
+{
+  size_t minBorder[ 3 ] = { m_size, m_size, m_size };
+  size_t maxBorder[ 3 ] = { 0, 0, 0 };
+
+  for( size_t i = 0; i < m_size; i++ )
+    for( size_t j = 0; j < m_size; j++ )
+      for( size_t k = 0; k < m_size; k++ )
+      {
+        if( ( j == 0 ) || ( getBlock( i, j, k ).isEmpty() ) ) continue;
+
+        minBorder[ 0 ] = qMin( minBorder[ 0 ], i );
+        minBorder[ 1 ] = qMin( minBorder[ 1 ], j );
+        minBorder[ 2 ] = qMin( minBorder[ 2 ], k );
+
+        maxBorder[ 0 ] = qMax( maxBorder[ 0 ], i );
+        maxBorder[ 1 ] = qMax( maxBorder[ 1 ], j );
+        maxBorder[ 2 ] = qMax( maxBorder[ 2 ], k );
+      }
+
+  size_t newSize = qMax( maxBorder[ 2 ] - minBorder[ 2 ],
+                         qMax( maxBorder[ 0 ] - minBorder[ 0 ], maxBorder[ 1 ] - minBorder[ 1 ] ) );
+  newSize += newSize % 2;
+
+  BlockData* newBlocks = new BlockData[ newSize * newSize * newSize ];
+  auto setNewBlock = [&]( int i, int j, int k, BlockData& block )
+    { newBlocks[ i + newSize * j + newSize * newSize * k ] = block; };
+
+  for( size_t i = 0; i < newSize; i++ )
+    for( size_t j = 0; j < newSize; j++ )
+      for( size_t k = 0; k < newSize; k++ )
+      {
+        if( ( i > maxBorder[ 0 ] ) || ( j > maxBorder[ 1 ] ) || ( k > maxBorder[ 2 ] ) ) continue;
+        setNewBlock( i, j, k, getBlock( i + minBorder[ 0 ], j + minBorder[ 1 ], k + minBorder[ 2 ] ) );
+      }
+
+  delete[] m_blocks;
+
+  m_blocks = newBlocks;
+  m_size = newSize;
+
+}
+
 
 
 
