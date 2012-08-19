@@ -102,6 +102,7 @@ void ShipModel::buildMesh()
     int rowToSideRemap[ 6 ] = { 5, 2, 4, 1, 0, 3 };
 
     memcpy( normals + vertCounter * 3, cubeNormals, cubeVerticesCount * 3 * sizeof( float ) );
+    memcpy( texcoords + vertCounter * 2, cubeTexcoords, cubeVerticesCount * 2 * sizeof( float ) );
 
     Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
 
@@ -112,20 +113,22 @@ void ShipModel::buildMesh()
       int row = x / 6;
       int side = rowToSideRemap[ row ];
 
-      // если сторона помечена на удаление из результирующего меша - не генерим для неё индексы
+      // если сторона помечена на удаление из результирующего меша - не генерим д.ля неё индексы
       if( occluders[ side ] != -1 )
       {
-        indices[ idxCounter ] = cubeIndices[ x ] + vertCounter;
+        int index = cubeIndices[ x ] + vertCounter;
 
-        float* color = colors + indices[ idxCounter ] * 3;
+        indices[ idxCounter ] = index;
+
+        float* color = colors + index * 3;
         float ao = 0.6f + 0.4f * ( 9 - occluders[ side ] ) / 9.;
         color[ 0 ] = color[ 1 ] = color[ 2 ] = ao;
 
         int blockId = m_blocks[ i ][ j ][ k ].blockType - 1;
         int subTexId = blockSpecs[ blockId ][ side ];
 
-        int idx = indices[ idxCounter ] % 4;
-        float* tex = texcoords + indices[ idxCounter ] * 2;
+        int idx = index % 4;
+        float* tex = texcoords + index * 2;
         switch( idx )
         {
         case 0:
@@ -165,7 +168,7 @@ void ShipModel::buildMesh()
 
   m_mesh.writeData( vertices, normals, texcoords, indices, colors,
                     m_octree.getRoot()->blocks().size() * cubeVerticesCount,
-                    indicesSize );
+                    idxCounter );
 
   delete[] vertices;
   delete[] normals;
@@ -255,20 +258,24 @@ void ShipModel::saveToFile( string fileName )
 
 void ShipModel::loadFromFile( string fileName )
 {
-  // clean
-  for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
-    for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
-      for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
-      {
-          m_blocks[ i ][ j ][ k ].blockType = 0;
-      }
-
   ifstream infile;
   infile.open( fileName );
 
   int worldDim;
   infile >> worldDim;
-  assert( worldDim == SHIP_MAX_SIZE );
+  if( worldDim != SHIP_MAX_SIZE )
+  {
+    qWarning() << "Size doesn't match. Loading canceled.";
+    infile.close();
+    return;
+  }
+
+  // clean
+  for( size_t i = 0; i < SHIP_MAX_SIZE; i++ )
+    for( size_t j = 0; j < SHIP_MAX_SIZE; j++ )
+      for( size_t k = 0; k < SHIP_MAX_SIZE; k++ )
+          m_blocks[ i ][ j ][ k ].blockType = 0;
+
 
   size_t size;
   infile >> size;

@@ -116,7 +116,6 @@ void GLRenderWidget::paintGL()
 
     QVector3D point = rayPos + rayDir * minIntersection.time;
 
-    // Clear the buffer with the current clearing color
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     QMatrix4x4 modelMatrix;
@@ -241,6 +240,7 @@ void GLRenderWidget::process()
                            cubeNormals[ index ][ 1 ],
                            cubeNormals[ index ][ 2 ] );
 
+      // вычитаем из скорости её проекцию на нормаль препятствия
       velocity -= wallNormal * ( velocity.dot(wallNormal) / wallNormal.dot( wallNormal ) );
     }
   }
