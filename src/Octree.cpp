@@ -39,6 +39,7 @@ void Octree::build( ShipModel* model )
     for( size_t j = 0; j < model->getSize(); j++ )
       for( size_t k = 0; k < model->getSize(); k++ )
       {
+        assert( model->getBlock( i, j, k ).blockType < 5 );
         if( !model->getBlock( i, j, k ).isEmpty() )
           m_root->blocks().push_back( BlockRef( i, j, k ) );
       }

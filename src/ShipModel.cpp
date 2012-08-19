@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <iostream>
 #include <fstream>
+#include <QFile>
 
 using namespace Eigen;
 using namespace std;
@@ -31,6 +32,11 @@ ShipModel::ShipModel( size_t size ): m_size( size )
         else
           getBlock( i, j, k ).blockType = 0;
       }
+}
+
+ShipModel::ShipModel( std::string fileName ): m_blocks( NULL )
+{
+  loadFromFile( fileName, true );
 }
 
 ShipModel::~ShipModel()
@@ -124,7 +130,7 @@ void ShipModel::buildMesh()
       int row = x / 6;
       int side = rowToSideRemap[ row ];
 
-      // если сторона помечена на удаление из результирующего меша - не генерим д.ля неё индексы
+      // если сторона помечена на удаление из результирующего меша - не генерим для неё индексы
       if( occluders[ side ] != -1 )
       {
         int index = cubeIndices[ x ] + vertCounter;
@@ -268,6 +274,7 @@ void ShipModel::saveToFile( string fileName )
   for( BlockRef& block : blocks )
   {
     BlockData& blockData = getBlock( block.i, block.j, block.k );
+    assert( blockData.blockType < 5 ); //!
     outfile << block.i << "\t" << block.j << "\t" << block.k << "\t" <<
                blockData.blockType << "\t" << blockData.orientation << endl;
   }
@@ -275,13 +282,27 @@ void ShipModel::saveToFile( string fileName )
   outfile.close();
 }
 
-void ShipModel::loadFromFile( string fileName )
+void ShipModel::loadFromFile( string fileName, bool reallocateBlocks )
 {
+  assert( QFile::exists( fileName.c_str() ) );
+
   ifstream infile;
   infile.open( fileName );
 
   size_t worldDim;
   infile >> worldDim;
+
+  if( ( reallocateBlocks && ( m_size != worldDim )  )|| ( m_blocks == NULL ) )
+  {
+    if( m_blocks != NULL )
+    {
+      delete[] m_blocks;
+    }
+
+    m_size = worldDim;
+    m_blocks = new BlockData[ m_size * m_size * m_size ];
+  }
+
   if( worldDim != m_size )
   {
     qWarning() << "Size doesn't match. Loading canceled.";
@@ -289,12 +310,7 @@ void ShipModel::loadFromFile( string fileName )
     return;
   }
 
-  // clean
-  for( size_t i = 0; i < m_size; i++ )
-    for( size_t j = 0; j < m_size; j++ )
-      for( size_t k = 0; k < m_size; k++ )
-          getBlock( i, j, k ).blockType = 0;
-
+  memset( m_blocks, 0, m_size * m_size * m_size * sizeof( BlockData ) );
 
   size_t size;
   infile >> size;
@@ -311,6 +327,7 @@ void ShipModel::loadFromFile( string fileName )
     infile >> blockOrient;
 
     getBlock( i, j, k ).blockType = blockType;
+    assert( blockType < 5 ); //!
     getBlock( i, j, k ).orientation = blockOrient;
   }
 
@@ -342,14 +359,20 @@ void ShipModel::optimize()
   newSize += newSize % 2;
 
   BlockData* newBlocks = new BlockData[ newSize * newSize * newSize ];
-  auto setNewBlock = [&]( int i, int j, int k, BlockData& block )
+  auto setNewBlock = [&]( int i, int j, int k, BlockData block )
     { newBlocks[ i + newSize * j + newSize * newSize * k ] = block; };
+
+  memset( newBlocks, 0, newSize * newSize * newSize * sizeof( BlockData ) );
 
   for( size_t i = 0; i < newSize; i++ )
     for( size_t j = 0; j < newSize; j++ )
       for( size_t k = 0; k < newSize; k++ )
       {
-        if( ( i > maxBorder[ 0 ] ) || ( j > maxBorder[ 1 ] ) || ( k > maxBorder[ 2 ] ) ) continue;
+
+        if( ( i + minBorder[ 0 ] >= m_size ) ||
+            ( j + minBorder[ 1 ] >= m_size ) ||
+            ( k + minBorder[ 2 ] >= m_size ) ) continue;
+
         setNewBlock( i, j, k, getBlock( i + minBorder[ 0 ], j + minBorder[ 1 ], k + minBorder[ 2 ] ) );
       }
 
@@ -357,6 +380,8 @@ void ShipModel::optimize()
 
   m_blocks = newBlocks;
   m_size = newSize;
+
+  m_octree.build( this );
 
 }
 

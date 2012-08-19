@@ -15,7 +15,7 @@
 using namespace Eigen;
 
 
-GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent ) :
+GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent, QString modelFileName ) :
     QGLWidget( format, parent ),
     m_timer( new QTimer( this ) ),
     m_fps( 0.0f ),
@@ -29,8 +29,8 @@ GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent ) :
 
   m_camera = CameraPtr( new Camera() );
 
-  if( QFile::exists( "default.txt" ) )
-    m_shipModel.loadFromFile( "default.txt" );
+  if( QFile::exists( modelFileName ) )
+    m_shipModel.loadFromFile( modelFileName.toStdString(), true );
 }
 
 GLRenderWidget::~GLRenderWidget()

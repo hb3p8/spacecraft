@@ -2,8 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QtGui/QMainWindow>
-
-class GLRenderWidget;
+#include <QGLWidget>
 
 class MainWindow : public QMainWindow
 {
@@ -13,8 +12,10 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    void setRenderWidget( QGLWidget* renderWidget );
+
 private:
-    GLRenderWidget* m_renderWidget;
+    QGLWidget* m_renderWidget;
 
 };
 

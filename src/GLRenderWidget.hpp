@@ -21,7 +21,7 @@ class GLRenderWidget : public QGLWidget
 {
     Q_OBJECT
 public:
-    GLRenderWidget( const QGLFormat& format, QWidget* parent = 0 );
+    GLRenderWidget( const QGLFormat& format, QWidget* parent = 0, QString modelFileName = "default.txt" );
     ~GLRenderWidget();
 
 protected:

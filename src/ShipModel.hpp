@@ -7,7 +7,7 @@
 #include "IndexedMesh.hpp"
 
 
-#define SHIP_MAX_SIZE_DEFAULT 40
+#define SHIP_MAX_SIZE_DEFAULT 32
 
 struct BlockData
 {
@@ -23,6 +23,7 @@ class ShipModel
 {
 public:
     ShipModel( size_t size = SHIP_MAX_SIZE_DEFAULT );
+    ShipModel( std::string fileName );
     ~ShipModel();
 
     inline BlockData& getBlock( int x, int y, int z ) { return *( m_blocks + x + m_size * y + m_size * m_size * z ); }
@@ -30,7 +31,7 @@ public:
 
     void refreshModel();
     void saveToFile( std::string fileName );
-    void loadFromFile( std::string fileName );
+    void loadFromFile( std::string fileName, bool reallocateBlocks = false );
 
     void optimize();
 
