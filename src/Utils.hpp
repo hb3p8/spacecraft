@@ -23,6 +23,8 @@ inline Eigen::Vector3f qtVectorToEigen( QVector3D v ) { return Eigen::Vector3f( 
 bool rayBoxIntersection( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, Eigen::Vector3f boxMin,
                          Eigen::Vector3f boxMax, float* time, size_t* side );
 
+int directionSideTest( Eigen::Vector3f rayDir );
+
 bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShaderPath,
                            const QString& fragmentShaderPath );
 

@@ -62,6 +62,21 @@ bool rayBoxIntersection( Vector3f rayStart, Vector3f rayDir, Vector3f boxMin,
 
 }
 
+int directionSideTest( Vector3f rayDir )
+{
+  int side;
+  rayDir.y() = 0;
+
+  int axis = 0;
+  if( qAbs( rayDir.z() ) > qAbs( rayDir.x() ) )
+    axis = 2;
+
+  side = axis;
+  if( rayDir[ axis ] <= 0 ) side += 3;
+
+  return side;
+}
+
 
 bool prepareShaderProgram( QGLShaderProgram& program,
                            const QString& vertexShaderPath,

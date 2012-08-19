@@ -38,6 +38,12 @@ void ShipModel::buildMesh()
   // преобразование индекса в side (формат side см в utils)
   int axisToSideRemap[ 7 ] = { 2, 1, 0, 6, 3, 4, 5 };
 
+  int rowToSideRemap[ 6 ] = { 5, 2, 4, 1, 0, 3 };
+
+  int rotationYRemap[ 6 ] = { 2, 1, 3, 5, 4, 0 };
+
+  int sideToOrientYRemap[ 6 ] = { 0, 0, 3, 2, 0, 1 };
+
   float* vertices;
   float* normals;
   float* texcoords;
@@ -99,12 +105,12 @@ void ShipModel::buildMesh()
 
     // генерим меш
 
-    int rowToSideRemap[ 6 ] = { 5, 2, 4, 1, 0, 3 };
-
     memcpy( normals + vertCounter * 3, cubeNormals, cubeVerticesCount * 3 * sizeof( float ) );
-    memcpy( texcoords + vertCounter * 2, cubeTexcoords, cubeVerticesCount * 2 * sizeof( float ) );
+//    memcpy( texcoords + vertCounter * 2, cubeTexcoords, cubeVerticesCount * 2 * sizeof( float ) );
 
     Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
+
+    BlockData& block = m_blocks[ i ][ j ][ k ];
 
     float itemSize = 0.2;
 
@@ -124,8 +130,14 @@ void ShipModel::buildMesh()
         float ao = 0.6f + 0.4f * ( 9 - occluders[ side ] ) / 9.;
         color[ 0 ] = color[ 1 ] = color[ 2 ] = ao;
 
-        int blockId = m_blocks[ i ][ j ][ k ].blockType - 1;
+        int orient = sideToOrientYRemap[ block.orientation ];
+        if( orient > 0 )
+        for( int c = 0; c < orient; c++ )
+          side = rotationYRemap[ side ];
+
+        int blockId = block.blockType - 1;
         int subTexId = blockSpecs[ blockId ][ side ];
+
 
         int idx = index % 4;
         float* tex = texcoords + index * 2;
@@ -247,10 +259,12 @@ void ShipModel::saveToFile( string fileName )
   outfile << SHIP_MAX_SIZE << endl;
   outfile << blocks.size() << endl;
 
+
   for( BlockRef& block : blocks )
   {
+    BlockData& blockData = m_blocks[ block.i ][ block.j ][ block.k ];
     outfile << block.i << "\t" << block.j << "\t" << block.k << "\t" <<
-               m_blocks[ block.i ][ block.j ][ block.k ].blockType << endl;
+               blockData.blockType << "\t" << blockData.orientation << endl;
   }
 
   outfile.close();
@@ -282,14 +296,17 @@ void ShipModel::loadFromFile( string fileName )
 
   for( size_t c = 0; c < size; c++ )
   {
-    int i, j, k, block;
+    int i, j, k, blockType;
+    char blockOrient;
 
     infile >> i;
     infile >> j;
     infile >> k;
-    infile >> block;
+    infile >> blockType;
+    infile >> blockOrient;
 
-    m_blocks[ i ][ j ][ k ].blockType = block;
+    m_blocks[ i ][ j ][ k ].blockType = blockType;
+    m_blocks[ i ][ j ][ k ].orientation = blockOrient;
   }
 
   infile.close();

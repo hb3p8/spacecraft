@@ -106,87 +106,92 @@ void GLRenderWidget::initializeGL()
 Intersection minIntersection;
 
 int blockToInsert = 1;
+int currentOrient = 0;
 
 void GLRenderWidget::paintGL()
 {
-    QVector3D rayPos( eigenVectorToQt( m_camera->position() ) );
-    QVector3D rayDir( eigenVectorToQt( m_camera->view() ) );
 
-    m_shipModel.octreeRaycastIntersect( m_camera->position(), m_camera->view(), minIntersection );
-
-    QVector3D point = rayPos + rayDir * minIntersection.time;
-
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-    QMatrix4x4 modelMatrix;
-    QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
-    QMatrix4x4 viewMatrix( m_camera->viewMatrix() );
-    QMatrix4x4 viewStarMatrix( viewMatrix );
-
-    // зануляем translation часть в видовой матрице для звёзд
-    viewStarMatrix.setColumn( 3, QVector4D( 0.0, 0.0, 0.0, 1.0 ) );
-
-    viewStarMatrix.scale( 10.0 );
-
-    m_starShader.bind();
-
-    glBindTexture( GL_TEXTURE_2D, textures.find( "stars" ).value() );
-
-    glDisable( GL_DEPTH_TEST );
-
-    m_starShader.setUniformValue( "projectionMatrix", projectionMatrix );
-    m_starShader.setUniformValue( "viewMatrix", viewStarMatrix );
-    m_starShader.setUniformValue( "colorTexture", 0 );
-
-    m_starMesh.draw();
-    m_starShader.release();
-
-    glEnable( GL_DEPTH_TEST );
-
-    m_cubeShader.bind();
-
-    glBindTexture( GL_TEXTURE_2D, textures.find( "block_faces" ).value() );
-
-    IndexedMesh& mesh = m_shipModel.getMesh();
-
-    modelMatrix.setToIdentity();
-    m_cubeShader.setUniformValue( "projectionMatrix", projectionMatrix );
-    m_cubeShader.setUniformValue( "viewMatrix", viewMatrix );
-    m_cubeShader.setUniformValue( "modelMatrix", modelMatrix );
-    m_cubeShader.setUniformValue( "ambient", 0.8f );
-    m_cubeShader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
-    m_cubeShader.setUniformValue( "point", point );
-    m_cubeShader.setUniformValue( "colorTexture", 0 );
+//  cursor().setPos( width()/2 - 2, height()/2 );
 
 
-    mesh.draw();
+  QVector3D rayPos( eigenVectorToQt( m_camera->position() ) );
+  QVector3D rayDir( eigenVectorToQt( m_camera->view() ) );
 
-    glBindTexture( GL_TEXTURE_2D, 0 );
+  m_shipModel.octreeRaycastIntersect( m_camera->position(), m_camera->view(), minIntersection );
 
-    m_cubeShader.release();
+  QVector3D point = rayPos + rayDir * minIntersection.time;
+
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+  QMatrix4x4 modelMatrix;
+  QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
+  QMatrix4x4 viewMatrix( m_camera->viewMatrix() );
+  QMatrix4x4 viewStarMatrix( viewMatrix );
+
+  // зануляем translation часть в видовой матрице для звёзд
+  viewStarMatrix.setColumn( 3, QVector4D( 0.0, 0.0, 0.0, 1.0 ) );
+
+  viewStarMatrix.scale( 10.0 );
+
+  m_starShader.bind();
+
+  glBindTexture( GL_TEXTURE_2D, textures.find( "stars" ).value() );
+
+  glDisable( GL_DEPTH_TEST );
+
+  m_starShader.setUniformValue( "projectionMatrix", projectionMatrix );
+  m_starShader.setUniformValue( "viewMatrix", viewStarMatrix );
+  m_starShader.setUniformValue( "colorTexture", 0 );
+
+  m_starMesh.draw();
+  m_starShader.release();
+
+  glEnable( GL_DEPTH_TEST );
+
+  m_cubeShader.bind();
+
+  glBindTexture( GL_TEXTURE_2D, textures.find( "block_faces" ).value() );
+
+  IndexedMesh& mesh = m_shipModel.getMesh();
+
+  modelMatrix.setToIdentity();
+  m_cubeShader.setUniformValue( "projectionMatrix", projectionMatrix );
+  m_cubeShader.setUniformValue( "viewMatrix", viewMatrix );
+  m_cubeShader.setUniformValue( "modelMatrix", modelMatrix );
+  m_cubeShader.setUniformValue( "ambient", 0.8f );
+  m_cubeShader.setUniformValue( "baseColor", QVector4D( 0.0, 0.0, 0.0, 0.0 ) );
+  m_cubeShader.setUniformValue( "point", point );
+  m_cubeShader.setUniformValue( "colorTexture", 0 );
 
 
-    process();
+  mesh.draw();
 
-    m_text.add( "camera\t", m_camera->position() );
-    m_text.add( "fps\t", m_fps );
+  glBindTexture( GL_TEXTURE_2D, 0 );
 
-    if( minIntersection.side != SIDE_NO_INTERSECTION )
-    {
-//      int selectedBlock = m_shipModel.getBlock( minIntersection.i, minIntersection.j, minIntersection.k );
-      m_text.add( "side\t", minIntersection.side );
-    }
+  m_cubeShader.release();
 
-    m_text.add( "block insert type\t", blockToInsert );
 
-    m_text.draw( this, 10, 15 );
-    m_text.clear();
+  process();
 
-    m_text.add("+");
-    m_text.draw( this, width()/2 - 2, height()/2 + 3 );
-    m_text.clear();
+  m_text.add( "camera\t", m_camera->position() );
+  m_text.add( "fps\t", m_fps );
 
-    nextFrame();
+  if( minIntersection.side != SIDE_NO_INTERSECTION )
+  {
+    //      int selectedBlock = m_shipModel.getBlock( minIntersection.i, minIntersection.j, minIntersection.k );
+    m_text.add( "side\t", minIntersection.side );
+  }
+
+  m_text.add( "block insert type\t", blockToInsert );
+  m_text.add( "current orientation\t", directionSideTest( m_camera->view() ) );
+  m_text.draw( this, 10, 15 );
+  m_text.clear();
+
+  m_text.add("+");
+  m_text.draw( this, width()/2 - 2, height()/2 + 3 );
+  m_text.clear();
+
+  nextFrame();
 }
 
 Vector3f velocity;
@@ -452,10 +457,13 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
     {
       size_t offset[3] = { 0, 0, 0 };
       offset[ minIntersection.side % 3 ] =  minIntersection.side > 2 ? 1 : -1;
-      m_shipModel.getBlock(
-            minIntersection.i + offset[ 0 ],
-            minIntersection.j + offset[ 1 ],
-            minIntersection.k + offset[ 2 ] ).blockType = blockToInsert;
+      BlockData& block = m_shipModel.getBlock(
+                            minIntersection.i + offset[ 0 ],
+                            minIntersection.j + offset[ 1 ],
+                            minIntersection.k + offset[ 2 ] );
+      block.blockType = blockToInsert;
+      block.orientation = directionSideTest( m_camera->view() );
+
       m_shipModel.refreshModel();
     }
   break;
@@ -497,6 +505,13 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
   break;
   case Qt::Key_4:
     blockToInsert = 4;
+  break;
+
+  case Qt::Key_Plus:
+    currentOrient += 1;
+  break;
+  case Qt::Key_Minus:
+    currentOrient -= 1;
   break;
 
 
