@@ -13,7 +13,7 @@ int blockSpecs[ numBlockTypes ][ 6 ] =
   { 0, 0, 0, 0, 0, 0 }, // hull
   { 1, 1, 1, 1, 1, 1 }, // armor
   { 2, 2, 2, 2, 2, 2 }, // power
-  { 2, 0, 0, 0, 0, 0 }  // engine
+  { 3, 0, 0, 0, 0, 0 }  // engine
 };
 
 ShipModel::ShipModel( size_t size ): m_size( size )
@@ -189,9 +189,9 @@ void ShipModel::buildMesh()
 
   }
 
-  m_mesh.writeData( vertices, normals, texcoords, indices, colors,
-                    m_octree.getRoot()->blocks().size() * cubeVerticesCount,
-                    idxCounter );
+  m_mesh.writeIndexedData( vertices, normals, texcoords, indices, colors,
+                           m_octree.getRoot()->blocks().size() * cubeVerticesCount,
+                           idxCounter );
 
   delete[] vertices;
   delete[] normals;

@@ -3,14 +3,7 @@
 #include <QGLShader>
 #include <QKeyEvent>
 #include <QApplication>
-#include <QMatrix>
-#include <QImage>
-#include <QFile>
 
-#include "Utils.hpp"
-
-#include <memory>
-#include <math.h>
 
 using namespace Eigen;
 

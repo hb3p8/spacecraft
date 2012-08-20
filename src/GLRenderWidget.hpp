@@ -2,18 +2,11 @@
 #define GLRENDERWIDGET_H
 
 #include <QGLWidget>
-#include <QGLBuffer>
-#include <QGLShaderProgram>
 #include <QTime>
 #include <QTimer>
 #include <QPoint>
 #include <QMap>
 
-#include "TextRender.hpp"
-#include "Camera.hpp"
-#include "ShipModel.hpp"
-#include "IndexedMesh.hpp"
-#include "SimpleMesh.hpp"
 #include "EditorScene.hpp"
 
 class GLRenderWidget : public QGLWidget

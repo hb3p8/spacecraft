@@ -15,8 +15,7 @@
 #include "TextRender.hpp"
 #include "Camera.hpp"
 #include "ShipModel.hpp"
-#include "IndexedMesh.hpp"
-#include "SimpleMesh.hpp"
+#include "Mesh.hpp"
 
 
 class GLRenderWidget;
@@ -44,7 +43,7 @@ public:
     virtual void wheelEvent( QWheelEvent* e );
 
 private slots:
-    void applyInput( float deltaTime );
+    void applyInput();
 
 
 private:
@@ -62,7 +61,7 @@ private:
 
     ShipModel m_shipModel;
 
-    SimpleMesh m_starMesh;
+    Mesh m_starMesh;
 
     int m_lastTime;
 

@@ -4,7 +4,8 @@
 #include <Eigen/Eigen>
 #include "Octree.hpp"
 #include "Utils.hpp"
-#include "IndexedMesh.hpp"
+#include "Mesh.hpp"
+#include "MeshData/Cube.hpp"
 
 
 #define SHIP_MAX_SIZE_DEFAULT 32
@@ -36,7 +37,7 @@ public:
     void optimize();
 
     Octree& getOctree() { return m_octree; }
-    IndexedMesh& getMesh() { return m_mesh; }
+    Mesh& getMesh() { return m_mesh; }
     size_t getSize() { return m_size; }
 
 
@@ -52,7 +53,7 @@ private:
 
     Eigen::Vector3i m_center;
     Octree m_octree;
-    IndexedMesh m_mesh;
+    Mesh m_mesh;
 
 };
 

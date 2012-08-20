@@ -14,6 +14,7 @@ class Scene : public QObject
     Q_OBJECT
 public:
     explicit Scene( QObject *parent = 0 );
+    virtual ~Scene(){}
 
     virtual void initialize() = 0;
     virtual void draw() = 0;

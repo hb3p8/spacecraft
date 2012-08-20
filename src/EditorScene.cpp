@@ -9,6 +9,7 @@
 
 #include "Utils.hpp"
 #include "GLRenderWidget.hpp"
+#include "MeshData/Stars.hpp"
 
 #include <memory>
 #include <math.h>
@@ -65,10 +66,12 @@ void EditorScene::initialize()
 
     m_shipModel.refreshModel();
 
-    buildStarMesh();
-    m_starMesh.setAttributesToShader( m_starShader );
+    StarBuilder stars;
+    stars.buildStarMesh();
+    m_starMesh.writeSimpleData( stars.getVertices(), stars.getTexcoords(), stars.getVerticeCount() );
+    m_starMesh.attachShader( m_starShader );
 
-    m_shipModel.getMesh().setAttributesToShader( m_cubeShader );
+    m_shipModel.getMesh().attachShader( m_cubeShader );
 
     m_cubeShader.release();
 
@@ -112,7 +115,7 @@ void EditorScene::draw()
   m_starShader.setUniformValue( "viewMatrix", viewStarMatrix );
   m_starShader.setUniformValue( "colorTexture", 0 );
 
-  m_starMesh.draw();
+  m_starMesh.drawSimple();
   m_starShader.release();
 
   glEnable( GL_DEPTH_TEST );
@@ -121,7 +124,7 @@ void EditorScene::draw()
 
   glBindTexture( GL_TEXTURE_2D, textures.find( "block_faces" ).value() );
 
-  IndexedMesh& mesh = m_shipModel.getMesh();
+  Mesh& mesh = m_shipModel.getMesh();
 
   modelMatrix.setToIdentity();
   m_cubeShader.setUniformValue( "projectionMatrix", projectionMatrix );
@@ -133,7 +136,7 @@ void EditorScene::draw()
   m_cubeShader.setUniformValue( "colorTexture", 0 );
 
 
-  mesh.draw();
+  mesh.drawIndexed();
 
   glBindTexture( GL_TEXTURE_2D, 0 );
 
@@ -170,7 +173,7 @@ void EditorScene::process( int newTime )
   m_velocity.x() *= 0.7;
   m_velocity.z() *= 0.7;
 
-  applyInput( delta );
+  applyInput();
 
   Vector3f downVec( 0.f, -1.f, 0.f );
   m_shipModel.octreeRaycastIntersect( m_camera->position(), downVec, m_moveIntersect );
@@ -219,11 +222,11 @@ void EditorScene::process( int newTime )
   m_camera->translate( m_velocity * delta );
 }
 
-void EditorScene::applyInput( float deltaTime )
+void EditorScene::applyInput()
 {
   Vector3f delta( 0.0F, 0.0F, 0.0F );
   Vector3f deltaVelocity;
-  float step = 0.7;//* deltaTime;
+  float scale = 0.7;
 
   InputMap::const_iterator i;
 
@@ -247,7 +250,7 @@ void EditorScene::applyInput( float deltaTime )
   deltaVelocity.y() = 0;
   if( deltaVelocity.dot( deltaVelocity ) > 1e-6 )
     deltaVelocity.normalize();
-  deltaVelocity *= step;
+  deltaVelocity *= scale;
 
   m_velocity += deltaVelocity;
 
@@ -263,127 +266,6 @@ void EditorScene::applyInput( float deltaTime )
       m_isJumping = true;
     }
   }
-
-}
-
-const int STAR_COUNT = 800;
-const float PATCH_SIZE = 0.8;
-
-void EditorScene::buildStarMesh()
-{
-  float* vertices;
-  float* normals;
-  float* texcoords;
-
-  size_t verticesSize = STAR_COUNT * 6 * 3;
-  size_t texcoordsSize = STAR_COUNT * 6 * 2;
-
-  vertices = new float[ verticesSize ];
-  normals = new float[ verticesSize ];
-  texcoords = new float[ texcoordsSize ];
-
-  std::vector< Vector2f > quadTex;
-  quadTex.push_back( Vector2f( 0.0, 1.0 ) );
-  quadTex.push_back( Vector2f( 1.0, 1.0 ) );
-  quadTex.push_back( Vector2f( 1.0, 0.0 ) );
-  quadTex.push_back( Vector2f( 0.0, 0.0 ) );
-
-
-  int indices[] = { 0, 3, 1, 1, 3, 2 };
-  int vertCounter = 0;
-
-  int ranseq = 123;
-  for ( int s = 0; s < STAR_COUNT; s++ )
-  {
-    // get a random point, normalize for center of patch
-    Vector3f eye;
-
-    int p = (ranseq++) * 17;
-    p = (p<<13) ^ p;
-    eye.x() = 1.0 - ((p * (p * p * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0;
-    eye.y() = 1.0 - ((p * (p * p * 14983 + 825193) + 1376312589) & 0x7fffffff) / 1073741824.0;
-    eye.z() = 1.0 - ((p * (p * p * 23431 + 830237) + 1376312589) & 0x7fffffff) / 1073741824.0;
-    eye.normalize();
-
-    // get a second random point
-    Vector3f xaxis;
-
-    p = (ranseq++) * 17;
-    p = (p<<13) ^ p;
-    xaxis.x() = 1.0 - ((p * (p * p * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0;
-    xaxis.y() = 1.0 - ((p * (p * p * 14983 + 825193) + 1376312589) & 0x7fffffff) / 1073741824.0;
-    xaxis.z() = 1.0 - ((p * (p * p * 23431 + 830237) + 1376312589) & 0x7fffffff) / 1073741824.0;
-
-    // cross with eye to get two axis
-    xaxis = xaxis.cross(eye);
-    xaxis.normalize();
-    Vector3f yaxis(xaxis);
-    yaxis = yaxis.cross(eye);
-
-    // randomly flip the axis to cut down on visible repetition
-    p = (ranseq++) * 17;
-    p = (p<<13) ^ p;
-    bool xflip = 0 < (1.0 - ((p * (p * p * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0);
-    bool yflip = 0 < (1.0 - ((p * (p * p * 14983 + 825193) + 1376312589) & 0x7fffffff) / 1073741824.0);
-
-    // build corner points
-    Vector3f normal(eye);
-    normal *= -1;
-    xaxis *= PATCH_SIZE;
-    if (xflip)
-      xaxis *= -1;
-    yaxis *= PATCH_SIZE;
-    if (yflip)
-      yaxis *= -1;
-    eye *= 0.49;
-
-    std::vector< Vector3f > quadVerts;
-    quadVerts.push_back( eye );
-    quadVerts[ quadVerts.size() - 1 ] -= xaxis;
-    quadVerts[ quadVerts.size() - 1 ] += yaxis;
-
-    quadVerts.push_back( eye );
-    quadVerts[ quadVerts.size() - 1 ] += xaxis;
-    quadVerts[ quadVerts.size() - 1 ] += yaxis;
-
-    quadVerts.push_back( eye );
-    quadVerts[ quadVerts.size() - 1 ] += xaxis;
-    quadVerts[ quadVerts.size() - 1 ] -= yaxis;
-
-    quadVerts.push_back( eye );
-    quadVerts[ quadVerts.size() - 1 ] -= xaxis;
-    quadVerts[ quadVerts.size() - 1 ] -= yaxis;
-
-
-    for( int i = 0; i < 6; i++ )
-    {
-      int idx = indices[ i ];
-      float* vertex = vertices + vertCounter * 3;
-      Vector3f current = quadVerts[ idx ] + eye * 10;
-      vertex[ 0 ] = current.x();
-      vertex[ 1 ] = current.y();
-      vertex[ 2 ] = current.z();
-
-      float* norm = normals + vertCounter * 3;
-      norm[ 0 ] = normal.x();
-      norm[ 1 ] = normal.y();
-      norm[ 2 ] = normal.z();
-
-      float* tex = texcoords + vertCounter * 2;
-      tex[ 0 ] = quadTex[ idx ].x();
-      tex[ 1 ] = quadTex[ idx ].y();
-
-      vertCounter++;
-    }
-
-  }
-
-  m_starMesh.allocateBuffers( vertices, normals, texcoords, vertCounter );
-
-
-  delete[] vertices;
-  delete[] normals;
-  delete[] texcoords;
 
 }
 
