@@ -21,7 +21,7 @@ public:
 
   Camera ( const Camera &camera );
 
-  void viewportResize( int width, int height ) { m_width = width; m_height = height; }
+  void viewportResize( int width, int height ) { m_viewportWidth = width; m_viewportHeight = height; }
   void setFieldOfView( float FOV ) { m_fieldOfView = FOV; }
 
   QMatrix4x4 projectionMatrix() const;
@@ -54,8 +54,8 @@ private:
   Eigen::Vector3f m_curRotation;
   Eigen::AngleAxisf m_rotation;
 
-  float m_width;
-  float m_height;
+  float m_viewportWidth;
+  float m_viewportHeight;
   float m_fieldOfView;
   float m_near;
   float m_far;

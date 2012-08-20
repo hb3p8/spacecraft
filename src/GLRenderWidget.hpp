@@ -14,8 +14,7 @@
 #include "ShipModel.hpp"
 #include "IndexedMesh.hpp"
 #include "SimpleMesh.hpp"
-
-typedef QMap< Qt::Key, bool > InputMap;
+#include "EditorScene.hpp"
 
 class GLRenderWidget : public QGLWidget
 {
@@ -24,12 +23,12 @@ public:
     GLRenderWidget( const QGLFormat& format, QWidget* parent = 0, QString modelFileName = "default.txt" );
     ~GLRenderWidget();
 
+    float getFPS(){ return m_fps; }
+
 protected:
     virtual void initializeGL();
     virtual void resizeGL( int w, int h );
     virtual void paintGL();
-
-    void process();
 
     virtual void keyPressEvent( QKeyEvent* e );
     virtual void keyReleaseEvent( QKeyEvent* e );
@@ -37,19 +36,11 @@ protected:
     virtual void mousePressEvent( QMouseEvent* e );
     virtual void wheelEvent( QWheelEvent* e );
 
-private slots:
-    void applyInput();
-
-
 private:
     void nextFrame();
-    void buildStarMesh();
 
-    static const int defaultXSize = 800;
-    static const int defaultYSize = 600;
-
-    QGLShaderProgram m_cubeShader;
-    QGLShaderProgram m_starShader;
+    static const int defaultXSize = 1024;
+    static const int defaultYSize = 768;
 
     QTimer* m_timer;
 
@@ -61,16 +52,7 @@ private:
     QTime* m_workTime;
     QTime* m_fpsTime;
 
-    TextRender m_text;
-
-    CameraPtr m_camera;
-    QPoint m_lastMousePos;
-
-    InputMap m_inputMap;
-
-    ShipModel m_shipModel;
-
-    SimpleMesh m_starMesh;
+    ScenePtr m_scene;
 
 };
 

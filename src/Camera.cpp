@@ -9,8 +9,8 @@ using namespace Eigen;
 Camera::Camera ( const Eigen::Vector3f &position, const Eigen::Vector3f &rotation):
   m_position( position ),
   m_curRotation( rotation ),
-  m_width( 800 ),
-  m_height( 600 ),
+  m_viewportWidth( 1024 ),
+  m_viewportHeight( 768 ),
   m_fieldOfView( 60.0 ),
   m_near( 0.1 ),
   m_far( 1000 )
@@ -21,8 +21,8 @@ Camera::Camera ( const Camera &camera ) :
   m_position( camera.m_position ),
   m_curRotation( camera.m_curRotation ),
   m_rotation( camera.m_rotation ),
-  m_width( camera.m_width ),
-  m_height( camera.m_height ),
+  m_viewportWidth( camera.m_viewportWidth ),
+  m_viewportHeight( camera.m_viewportHeight ),
   m_fieldOfView( camera.m_fieldOfView ),
   m_near( camera.m_near ),
   m_far( camera.m_far )
@@ -33,7 +33,7 @@ QMatrix4x4 Camera::projectionMatrix() const
 {
   QMatrix4x4 matrix;
   matrix.setToIdentity();
-  const float aspectRatio = m_width / m_height;
+  const float aspectRatio = m_viewportWidth / m_viewportHeight;
   matrix.perspective( m_fieldOfView, aspectRatio, m_near, m_far );
 
   return matrix;
