@@ -4,17 +4,9 @@
 #include <vector>
 #include <memory>
 #include <Eigen/Eigen>
-
-
+#include "Utils.hpp"
 
 class ShipModel;
-
-struct BlockRef
-{
-  int i, j, k;
-  BlockRef(): i( 0 ), j( 0 ), k( 0 ) {}
-  BlockRef( int x, int y, int z ): i( x ), j( y ), k( z ) {}
-};
 
 class OctreeNode;
 typedef std::shared_ptr< OctreeNode > OctreeNodePtr;

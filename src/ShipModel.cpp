@@ -354,12 +354,12 @@ void ShipModel::optimize()
         maxBorder[ 2 ] = qMax( maxBorder[ 2 ], k );
       }
 
-  size_t newSize = qMax( maxBorder[ 2 ] - minBorder[ 2 ],
-                         qMax( maxBorder[ 0 ] - minBorder[ 0 ], maxBorder[ 1 ] - minBorder[ 1 ] ) );
+  size_t newSize = qMax( maxBorder[ 2 ] - minBorder[ 2 ] + 1,
+                   qMax( maxBorder[ 0 ] - minBorder[ 0 ] + 1, maxBorder[ 1 ] - minBorder[ 1 ] + 1 ) );
   newSize += newSize % 2;
 
   BlockData* newBlocks = new BlockData[ newSize * newSize * newSize ];
-  auto setNewBlock = [&]( int i, int j, int k, BlockData block )
+  auto setNewBlock = [&]( int i, int j, int k, BlockData& block )
     { newBlocks[ i + newSize * j + newSize * newSize * k ] = block; };
 
   memset( newBlocks, 0, newSize * newSize * newSize * sizeof( BlockData ) );
@@ -383,6 +383,64 @@ void ShipModel::optimize()
 
   m_octree.build( this );
 
+}
+
+Eigen::Vector3f ShipModel::calculateMassCenter()
+{
+  float massSum = 0.0;
+  Vector3f massCenter = Vector3f::Zero();
+
+  vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
+
+  for( BlockRef& block : blocks )
+  {
+    float blockMass = 1.0;
+    massSum += blockMass;
+
+    massCenter += blockMass * Vector3f( 2. * block.i, 2. * block.j, 2. * block.k );
+  }
+
+  m_massCenter = massCenter / massSum;
+  m_mass = massSum;
+
+  return m_massCenter;
+}
+
+float ShipModel::sqrDistToAxis( Vector3f& axis, Vector3f& pos )
+{
+  Vector3f distToMass = m_massCenter - pos;
+
+  return ( distToMass - axis * ( distToMass.dot( axis ) / axis.squaredNorm() ) ).squaredNorm();
+}
+
+float ShipModel::getInertia( Vector3f axis )
+{
+  float inertia = 0;
+
+  vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
+
+  for( BlockRef& block : blocks )
+  {
+    Vector3f blockPos( 2. * block.i, 2. * block.j, 2. * block.k );
+    float mass = 1.0;
+
+    inertia += sqrDistToAxis( axis, blockPos ) * mass;
+  }
+
+  return inertia;
+}
+
+void ShipModel::findEngines()
+{
+  m_engines.clear();
+
+  vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
+
+  for( BlockRef& block : blocks )
+  {
+    if( getBlock( block ).blockType == 4 )
+      m_engines.push_back( block );
+  }
 }
 
 

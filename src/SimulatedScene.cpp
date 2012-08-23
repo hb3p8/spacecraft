@@ -1,4 +1,4 @@
-#include "EditorScene.hpp"
+#include "SimulatedScene.hpp"
 
 #include <QGLShader>
 #include <QKeyEvent>
@@ -17,15 +17,11 @@
 using namespace Eigen;
 
 
-EditorScene::EditorScene( QString modelFileName ) :
+SimulatedScene::SimulatedScene( QString modelFileName ) :
   Scene( NULL ),
   m_text( "LMMonoCaps10", 10, Qt::green ),
   m_lastTime( 0 ),
-  m_velocity( Vector3f::Zero() ),
-  m_isJumping( false ),
-  m_justJumped( false ),
-  m_blockToInsert( 1 ),
-  m_currentOrient( 0 )
+  m_velocity( Vector3f::Zero() )
 {
   m_camera = CameraPtr( new Camera() );
 
@@ -33,11 +29,13 @@ EditorScene::EditorScene( QString modelFileName ) :
     m_shipModel.loadFromFile( modelFileName.toStdString(), true );
 }
 
-EditorScene::~EditorScene()
+SimulatedScene::~SimulatedScene()
 {
 }
 
-void EditorScene::initialize()
+BlockRef engineBlockRef;
+
+void SimulatedScene::initialize()
 {
     assert( m_widget );
 
@@ -66,6 +64,7 @@ void EditorScene::initialize()
     }
 
     m_shipModel.refreshModel();
+    m_shipModel.calculateMassCenter();
 
     StarBuilder stars;
     stars.buildStarMesh();
@@ -76,10 +75,30 @@ void EditorScene::initialize()
 
     m_cubeShader.release();
 
-    m_camera->setPosition( Eigen::Vector3f( 0.0, 5.5, 2.5 ) );
+    m_camera->setPosition( Eigen::Vector3f( 0.0, 0.0, 0.0 ) );
+
+//    std::vector< BlockRef >& blocks = m_shipModel.getOctree().getRoot()->blocks();
+
+//    for( BlockRef& block : blocks )
+//    {
+//      if( m_shipModel.getBlock( block ).blockType == 4 )
+//      {
+//        engineBlockRef = block;
+//        break;
+//      }
+//    }
+
+    m_shipModel.findEngines();
 }
 
-void EditorScene::draw()
+Vector3f shipPosition = Vector3f::Zero();
+Vector3f shipVelocity = Vector3f::Zero();
+bool engineRunning = false;
+
+AngleAxisf shipRotation = AngleAxisf( 0.0, Vector3f::UnitX() );
+Vector3f shipAngularVelocity = Vector3f::Zero();
+
+void SimulatedScene::draw()
 {
 
   QVector3D rayPos( eigenVectorToQt( m_camera->position() ) );
@@ -122,7 +141,14 @@ void EditorScene::draw()
 
   Mesh& mesh = m_shipModel.getMesh();
 
+
   modelMatrix.setToIdentity();
+  modelMatrix.translate( eigenVectorToQt( shipPosition ) );
+
+  modelMatrix.rotate( shipRotation.angle() / M_PI * 180., eigenVectorToQt( shipRotation.axis() ) );
+
+  modelMatrix.translate( eigenVectorToQt( m_shipModel.getMassCenter() * (-1) ) );
+
   m_cubeShader.setUniformValue( "projectionMatrix", projectionMatrix );
   m_cubeShader.setUniformValue( "viewMatrix", viewMatrix );
   m_cubeShader.setUniformValue( "modelMatrix", modelMatrix );
@@ -141,14 +167,9 @@ void EditorScene::draw()
   m_text.add( "fps\t", dynamic_cast< GLRenderWidget* >( m_widget )->getFPS() );
   m_text.add( "camera\t", m_camera->position() );
 
-  if( m_minIntersection.side != SIDE_NO_INTERSECTION )
-  {
-    //      int selectedBlock = m_shipModel.getBlock( minIntersection.i, minIntersection.j, minIntersection.k );
-    m_text.add( "side\t", m_minIntersection.side );
-  }
+  m_text.add( "engine run\t", engineRunning );
 
-  m_text.add( "block insert type\t", m_blockToInsert );
-  m_text.add( "current orientation\t", directionSideTest( m_camera->view() ) );
+  m_text.add( "mass center\t", m_shipModel.getMassCenter() );
   m_text.draw( m_widget, 10, 15 );
   m_text.clear();
 
@@ -159,70 +180,61 @@ void EditorScene::draw()
 
 
 
-void EditorScene::process( int newTime )
+void SimulatedScene::process( int newTime )
 {
   int deltaTime = newTime - m_lastTime;
   m_lastTime = newTime;
 
   float delta = deltaTime / 100.f;
 
-  m_velocity.x() *= 0.7;
-  m_velocity.z() *= 0.7;
+  m_velocity *= 0.7;
 
   applyInput();
 
-  Vector3f downVec( 0.f, -1.f, 0.f );
-  m_shipModel.octreeRaycastIntersect( m_camera->position(), downVec, m_moveIntersect );
-  Vector3f toGround = downVec * m_moveIntersect.time;
-//  Vector3f point = m_camera->position() + toGround;
-  if( m_moveIntersect.intersected() )
-  {
-    float sqrDist = toGround.dot( toGround );
-    if( sqrDist > 9.0 + 0.1 ) m_velocity.y() += -0.10;
-    else if( sqrDist < 9.0 - 0.1 ) m_velocity.y() = 0.15;
-    else
-    {
-      if( m_justJumped )
-        m_justJumped = false;
-      else
-      {
-        m_isJumping = false;
-        m_velocity.y() = 0;
-      }
-    }
-  }
-
-  int sideToRowRemap[ 6 ] = { 4, 3, 1, 5, 2, 0 };
-
-  Vector3f viewVec( m_velocity );
-  viewVec.y() = 0;
-  viewVec.normalize();
-
-  m_shipModel.octreeRaycastIntersect( m_camera->position() + downVec * 2.0, viewVec, m_moveIntersect );
-  Vector3f toWall = viewVec * m_moveIntersect.time;
-  if( m_moveIntersect.intersected() )
-  {
-    float sqrDist = toWall.dot( toWall );
-    if( sqrDist < 1.5 )
-    {
-      int index = cubeIndices[ sideToRowRemap[ m_moveIntersect.side ] * 6 ];
-      Vector3f wallNormal( cubeNormals[ index ][ 0 ],
-                           cubeNormals[ index ][ 1 ],
-                           cubeNormals[ index ][ 2 ] );
-
-      // вычитаем из скорости её проекцию на нормаль препятствия
-      m_velocity -= wallNormal * ( m_velocity.dot(wallNormal) / wallNormal.dot( wallNormal ) );
-    }
-  }
-
   m_camera->translate( m_velocity * delta );
+
+
+  int rotationYRemap[ 6 ] = { 2, 1, 3, 5, 4, 0 };
+  int sideToOrientYRemap[ 6 ] = { 0, 0, 3, 2, 0, 1 };
+
+  if( engineRunning )
+  {
+    for( BlockRef engineBlockRef : m_shipModel.getEngines() )
+    {
+      int side = 0;
+      int orient = sideToOrientYRemap[ m_shipModel.getBlock( engineBlockRef ).orientation ];
+      for( int i = 0; i < orient; i++ )
+        side = rotationYRemap[ side ];
+      Vector3f engineDir = -1 * sideToNormal( side );
+
+      float engineForce = 0.1;
+
+      Vector3f enginePos( engineBlockRef.i * 2., engineBlockRef.j * 2., engineBlockRef.k * 2. );
+      Vector3f angularVelDelta = engineDir.cross( enginePos - m_shipModel.getMassCenter() );
+
+      // изменение угловой скорости считаем в локальном пространстве модели
+      shipAngularVelocity += (-1) * angularVelDelta * engineForce / m_shipModel.getInertia( angularVelDelta );
+
+      // изменение скорости - в мировом пространстве (с учётом shipRotation)
+      engineDir = shipRotation * engineDir;
+      shipVelocity += engineDir * engineForce / m_shipModel.getMass();
+
+    }
+  }
+
+  shipPosition += shipVelocity * delta;
+  assert( shipVelocity.x() != 1/0. && shipVelocity.y() != 1/0. &&  shipVelocity.z() != 1/0. );
+
+  if( shipAngularVelocity.norm() > 1e-5 )
+    shipRotation = shipRotation * AngleAxisf( shipAngularVelocity.norm() * delta, shipAngularVelocity.normalized() );
+
 }
 
-void EditorScene::applyInput()
+void SimulatedScene::applyInput()
 {
   Vector3f delta( 0.0F, 0.0F, 0.0F );
   Vector3f deltaVelocity;
-  float scale = 0.7;
+  float scale = 1.0;
 
   InputMap::const_iterator i;
 
@@ -243,41 +255,23 @@ void EditorScene::applyInput()
     delta[ 0 ] -= 1.0;
 
   deltaVelocity = m_camera->rotation() * delta;
-  deltaVelocity.y() = 0;
-  if( deltaVelocity.dot( deltaVelocity ) > 1e-6 )
-    deltaVelocity.normalize();
-  deltaVelocity *= scale;
 
-  m_velocity += deltaVelocity;
-
-  // jumping
-
-  i = m_inputMap.find( Qt::Key_Space );
-  if( i != m_inputMap.end() && i.value() == true )
-  {
-    if( !m_isJumping )
-    {
-      m_velocity.y() += 1.6;
-      m_justJumped = true;
-      m_isJumping = true;
-    }
-  }
+  m_velocity += deltaVelocity * scale;
 
 }
 
-void EditorScene::viewportResize( int w, int h )
+void SimulatedScene::viewportResize( int w, int h )
 {
   m_camera->viewportResize( w, qMax( h, 1 ) );
 }
 
-void EditorScene::keyPressEvent( QKeyEvent *e )
+void SimulatedScene::keyPressEvent( QKeyEvent *e )
 {
   static bool wireframeMode = false;
   switch ( e->key() )
   {
   case Qt::Key_Escape:
     QCoreApplication::instance()->quit();
-    m_shipModel.saveToFile( "default.txt" );
     break;
   case Qt::Key_F:
     if( wireframeMode )
@@ -285,67 +279,31 @@ void EditorScene::keyPressEvent( QKeyEvent *e )
     else
       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     wireframeMode = !wireframeMode;
-    break;
-  case Qt::Key_C:
-    if( m_minIntersection.side != SIDE_NO_INTERSECTION )
-    {
-      size_t offset[3] = { 0, 0, 0 };
-      offset[ m_minIntersection.side % 3 ] =  m_minIntersection.side > 2 ? 1 : -1;
-      BlockData& block = m_shipModel.getBlock(
-            m_minIntersection.i + offset[ 0 ],
-            m_minIntersection.j + offset[ 1 ],
-            m_minIntersection.k + offset[ 2 ] );
-      block.blockType = m_blockToInsert;
-      block.orientation = directionSideTest( m_camera->view() );
-
-      m_shipModel.refreshModel();
-    }
-    break;
-  case Qt::Key_X:
-    if( m_minIntersection.side != SIDE_NO_INTERSECTION )
-    {
-      m_shipModel.getBlock(
-            m_minIntersection.i,
-            m_minIntersection.j,
-            m_minIntersection.k ).blockType = 0;
-      m_shipModel.refreshModel();
-    }
-    break;
-
-  case Qt::Key_1:
-    m_blockToInsert = 1;
-  break;
-  case Qt::Key_2:
-    m_blockToInsert = 2;
-  break;
-  case Qt::Key_3:
-    m_blockToInsert = 3;
-  break;
-  case Qt::Key_4:
-    m_blockToInsert = 4;
   break;
 
-  case Qt::Key_Plus:
-    m_currentOrient += 1;
+  case Qt::Key_M:
+    m_camera->setPosition( m_shipModel.getMassCenter() );
   break;
-  case Qt::Key_Minus:
-    m_currentOrient -= 1;
+
+  case Qt::Key_E:
+    engineRunning = !engineRunning;
   break;
+
   }
 }
 
-void EditorScene::wheelEvent( QWheelEvent* event )
+void SimulatedScene::wheelEvent( QWheelEvent* event )
 {
   m_camera->translate( m_camera->rotation() *
                        Vector3f( 0.0, 0.0, static_cast< GLfloat >( event->delta() ) * 1.0 / 100 ) );
 }
 
-void EditorScene::mousePressEvent( QMouseEvent* event )
+void SimulatedScene::mousePressEvent( QMouseEvent* event )
 {
   m_lastMousePos = event->pos();
 }
 
-void EditorScene::mouseMoveEvent( QMouseEvent* event )
+void SimulatedScene::mouseMoveEvent( QMouseEvent* event )
 {
   GLfloat dx = static_cast< GLfloat >( event->pos().x() - m_lastMousePos.x() ) / m_widget->width () / 2 * M_PI;
   GLfloat dy = static_cast< GLfloat >( event->pos().y() - m_lastMousePos.y() ) / m_widget->height() / 2 * M_PI;

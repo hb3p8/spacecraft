@@ -4,10 +4,11 @@
 #include <QObject>
 #include <QMap>
 #include <QKeyEvent>
+#include <QGLWidget>
 
 #include <memory>
 
-typedef QMap< Qt::Key, bool > InputMap;
+typedef QMap< int, bool > InputMap;
 
 class Scene : public QObject
 {
@@ -24,6 +25,7 @@ public:
     virtual void viewportResize( int width, int height ) = 0;
 
     InputMap& getInputMap() { return m_inputMap; }
+    void setWidget( QGLWidget* widget ){ m_widget = widget; }
 
     virtual void keyPressEvent( QKeyEvent* e ) = 0;
     virtual void mouseMoveEvent( QMouseEvent* e ) = 0;
@@ -33,6 +35,7 @@ public:
 protected:
 
     InputMap m_inputMap;
+    QGLWidget* m_widget;
 
 };
 

@@ -13,7 +13,7 @@ class GLRenderWidget : public QGLWidget
 {
     Q_OBJECT
 public:
-    GLRenderWidget( const QGLFormat& format, QWidget* parent = 0, QString modelFileName = "default.txt" );
+    GLRenderWidget( const QGLFormat& format, ScenePtr scene, QWidget* parent = 0);
     ~GLRenderWidget();
 
     float getFPS(){ return m_fps; }

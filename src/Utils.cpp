@@ -77,6 +77,16 @@ int directionSideTest( Vector3f rayDir )
   return side;
 }
 
+Vector3f sideToNormal( int side )
+{
+  int sideToRowRemap[ 6 ] = { 5, 2, 1, 4, 3, 0 };
+
+  int index = cubeIndices[ sideToRowRemap[ side ] * 6 ];
+  return Vector3f( cubeNormals[ index ][ 0 ],
+                   cubeNormals[ index ][ 1 ],
+                   cubeNormals[ index ][ 2 ] );
+}
+
 
 bool prepareShaderProgram( QGLShaderProgram& program,
                            const QString& vertexShaderPath,

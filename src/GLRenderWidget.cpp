@@ -8,18 +8,19 @@
 using namespace Eigen;
 
 
-GLRenderWidget::GLRenderWidget( const QGLFormat& format, QWidget* parent, QString modelFileName ) :
+GLRenderWidget::GLRenderWidget( const QGLFormat& format, ScenePtr scene, QWidget* parent ) :
     QGLWidget( format, parent ),
     m_timer( new QTimer( this ) ),
     m_fps( 0.0f ),
     m_frames( 0 ),
     m_refreshTime( 1000 ),
     m_workTime( new QTime() ),
-    m_fpsTime( new QTime() )
+    m_fpsTime( new QTime() ),
+    m_scene( scene )
 {
   setMinimumSize( defaultXSize, defaultYSize );
 
-  m_scene = EditorScenePtr( new EditorScene( this, NULL, modelFileName ) );
+//  m_scene = EditorScenePtr( new EditorScene( this, NULL, modelFileName ) );
 }
 
 GLRenderWidget::~GLRenderWidget()
@@ -28,6 +29,8 @@ GLRenderWidget::~GLRenderWidget()
 
 void GLRenderWidget::initializeGL()
 {
+    assert( m_scene );
+
     QGLFormat glFormat = QGLWidget::format();
     if ( !glFormat.sampleBuffers() )
         qWarning() << "Could not enable sample buffers";
@@ -72,59 +75,15 @@ void GLRenderWidget::resizeGL( int w, int h )
 
 void GLRenderWidget::keyPressEvent( QKeyEvent* e )
 {
+  m_scene->getInputMap().insert( e->key(), true );
   m_scene->keyPressEvent( e );
-  switch ( e->key() )
-  {
-  case Qt::Key_W:
-    m_scene->getInputMap().insert( Qt::Key_W, true );
-  break;
-  case Qt::Key_S:
-    m_scene->getInputMap().insert( Qt::Key_S, true );
-  break;
-  case Qt::Key_A:
-    m_scene->getInputMap().insert( Qt::Key_A, true );
-  break;
-  case Qt::Key_D:
-    m_scene->getInputMap().insert( Qt::Key_D, true );
-  break;
-  case Qt::Key_Space:
-    m_scene->getInputMap().insert( Qt::Key_Space, true );
-  break;
-
-
-  default:
-    QGLWidget::keyPressEvent( e );
-  }
+  QGLWidget::keyPressEvent( e );
 }
 
 void GLRenderWidget::keyReleaseEvent( QKeyEvent* e )
 {
-  switch ( e->key() )
-  {
-  case Qt::Key_W:
-
-    m_scene->getInputMap().insert( Qt::Key_W, false );
-  break;
-  case Qt::Key_S:
-
-    m_scene->getInputMap().insert( Qt::Key_S, false );
-  break;
-  case Qt::Key_A:
-
-    m_scene->getInputMap().insert( Qt::Key_A, false );
-  break;
-  case Qt::Key_D:
-
-    m_scene->getInputMap().insert( Qt::Key_D, false );
-  break;
-  case Qt::Key_Space:
-
-    m_scene->getInputMap().insert( Qt::Key_Space, false );
-  break;
-
-  default:
-    QGLWidget::keyReleaseEvent( e );
-  }
+  m_scene->getInputMap().insert( e->key(), false );
+  QGLWidget::keyReleaseEvent( e );
 }
 
 void GLRenderWidget::wheelEvent( QWheelEvent* event )

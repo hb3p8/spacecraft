@@ -1,5 +1,5 @@
-#ifndef EDITOR_SCENE_H
-#define EDITOR_SCENE_H
+#ifndef SIMULATED_SCENE_H
+#define SIMULATED_SCENE_H
 
 #include <QGLWidget>
 #include <QGLBuffer>
@@ -20,12 +20,12 @@
 
 class GLRenderWidget;
 
-class EditorScene : public Scene
+class SimulatedScene : public Scene
 {
     Q_OBJECT
 public:
-    EditorScene( QString modelFileName = "default.txt" );
-    ~EditorScene();
+    SimulatedScene( QString modelFileName = "default.txt" );
+    ~SimulatedScene();
 
 public:
     virtual void initialize();
@@ -64,16 +64,12 @@ private:
     int m_lastTime;
 
     Eigen::Vector3f m_velocity;
-    bool m_isJumping;
-    bool m_justJumped;
-    Intersection m_moveIntersect;
     Intersection m_minIntersection;
-    int m_blockToInsert;
-    int m_currentOrient;
+
     QMap<std::string, GLuint> m_textures;
 
 };
 
-typedef std::shared_ptr< EditorScene > EditorScenePtr;
+typedef std::shared_ptr< SimulatedScene > SimulatedScenePtr;
 
-#endif // EDITOR_SCENE_H
+#endif // SIMULATED_SCENE_H

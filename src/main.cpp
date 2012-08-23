@@ -1,6 +1,8 @@
 #include <QtGui/QApplication>
 #include "mainwindow.hpp"
 #include "GLRenderWidget.hpp"
+#include "EditorScene.hpp"
+#include "SimulatedScene.hpp"
 #include <iostream>
 #include <QGLFormat>
 
@@ -13,6 +15,8 @@ int main(int argc, char *argv[])
     bool skipNext = false;
 
     QString fileToOpen( "default.txt" );
+    ScenePtr startScenePtr;
+    bool useEditorScene = true;
 
     for( int i = 0; i < QApplication::arguments().size(); i++ )
     {
@@ -25,6 +29,7 @@ int main(int argc, char *argv[])
         cout << "\t--help\n\t\tto print this message" << endl;
         cout << "\t--model <file_name>\n\t\tto load model from file" << endl;
         cout << "\t--export <file_name>\n\t\tto optimize model and save to file" << endl;
+        cout << "\t--sim \n\t\tto open model in simulation scene" << endl;
         cout << flush;
       }
 
@@ -47,6 +52,17 @@ int main(int argc, char *argv[])
         return 0;
       }
 
+      if( argument == "--sim" )
+      {
+        startScenePtr.reset( new SimulatedScene( fileToOpen ) );
+        useEditorScene = false;
+      }
+
+    }
+
+    if( useEditorScene )
+    {
+      startScenePtr.reset( new EditorScene( fileToOpen ) );
     }
 
     MainWindow w;
@@ -55,7 +71,8 @@ int main(int argc, char *argv[])
     glFormat.setProfile( QGLFormat::CoreProfile );
     glFormat.setSampleBuffers( true );
 
-    GLRenderWidget* renderWidget = new GLRenderWidget( glFormat, &w, fileToOpen );
+    GLRenderWidget* renderWidget = new GLRenderWidget( glFormat, startScenePtr, &w );
+    startScenePtr->setWidget( renderWidget );
     w.setRenderWidget( renderWidget );
 
     w.show();
