@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
         cout << "\t--export <file_name>\n\t\tto optimize model and save to file" << endl;
         cout << "\t--sim \n\t\tto open model in simulation scene" << endl;
         cout << flush;
+        return 0;
       }
 
       if( argument == "--model" )

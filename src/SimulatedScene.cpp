@@ -33,8 +33,6 @@ SimulatedScene::~SimulatedScene()
 {
 }
 
-BlockRef engineBlockRef;
-
 void SimulatedScene::initialize()
 {
     assert( m_widget );
@@ -77,26 +75,10 @@ void SimulatedScene::initialize()
 
     m_camera->setPosition( Eigen::Vector3f( 0.0, 0.0, 0.0 ) );
 
-//    std::vector< BlockRef >& blocks = m_shipModel.getOctree().getRoot()->blocks();
-
-//    for( BlockRef& block : blocks )
-//    {
-//      if( m_shipModel.getBlock( block ).blockType == 4 )
-//      {
-//        engineBlockRef = block;
-//        break;
-//      }
-//    }
-
     m_shipModel.findEngines();
 }
 
-Vector3f shipPosition = Vector3f::Zero();
-Vector3f shipVelocity = Vector3f::Zero();
 bool engineRunning = false;
-
-AngleAxisf shipRotation = AngleAxisf( 0.0, Vector3f::UnitX() );
-Vector3f shipAngularVelocity = Vector3f::Zero();
 
 void SimulatedScene::draw()
 {
@@ -143,9 +125,10 @@ void SimulatedScene::draw()
 
 
   modelMatrix.setToIdentity();
-  modelMatrix.translate( eigenVectorToQt( shipPosition ) );
+  modelMatrix.translate( eigenVectorToQt( m_shipModel.shipPosition() ) );
 
-  modelMatrix.rotate( shipRotation.angle() / M_PI * 180., eigenVectorToQt( shipRotation.axis() ) );
+  modelMatrix.rotate( m_shipModel.shipRotation().angle() / M_PI * 180.,
+                      eigenVectorToQt( m_shipModel.shipRotation().axis() ) );
 
   modelMatrix.translate( eigenVectorToQt( m_shipModel.getMassCenter() * (-1) ) );
 
@@ -193,41 +176,7 @@ void SimulatedScene::process( int newTime )
 
   m_camera->translate( m_velocity * delta );
 
-
-  int rotationYRemap[ 6 ] = { 2, 1, 3, 5, 4, 0 };
-  int sideToOrientYRemap[ 6 ] = { 0, 0, 3, 2, 0, 1 };
-
-  if( engineRunning )
-  {
-    for( BlockRef engineBlockRef : m_shipModel.getEngines() )
-    {
-      int side = 0;
-      int orient = sideToOrientYRemap[ m_shipModel.getBlock( engineBlockRef ).orientation ];
-      for( int i = 0; i < orient; i++ )
-        side = rotationYRemap[ side ];
-      Vector3f engineDir = -1 * sideToNormal( side );
-
-      float engineForce = 0.1;
-
-      Vector3f enginePos( engineBlockRef.i * 2., engineBlockRef.j * 2., engineBlockRef.k * 2. );
-      Vector3f angularVelDelta = engineDir.cross( enginePos - m_shipModel.getMassCenter() );
-
-      // изменение угловой скорости считаем в локальном пространстве модели
-      shipAngularVelocity += (-1) * angularVelDelta * engineForce / m_shipModel.getInertia( angularVelDelta );
-
-      // изменение скорости - в мировом пространстве (с учётом shipRotation)
-      engineDir = shipRotation * engineDir;
-      shipVelocity += engineDir * engineForce / m_shipModel.getMass();
-
-    }
-  }
-
-  shipPosition += shipVelocity * delta;
-  assert( shipVelocity.x() != 1/0. && shipVelocity.y() != 1/0. &&  shipVelocity.z() != 1/0. );
-
-  if( shipAngularVelocity.norm() > 1e-5 )
-    shipRotation = shipRotation * AngleAxisf( shipAngularVelocity.norm() * delta, shipAngularVelocity.normalized() );
-
+  m_shipModel.process( delta );
 }
 
 void SimulatedScene::applyInput()
@@ -287,6 +236,19 @@ void SimulatedScene::keyPressEvent( QKeyEvent *e )
 
   case Qt::Key_E:
     engineRunning = !engineRunning;
+    if( engineRunning )
+    {
+      for( BlockRef engine : m_shipModel.getEngines() )
+      {
+        int idx = engine.generalIndex( m_shipModel.modelSize() );
+        m_shipModel.enginePower().insert( idx, 1.0 );
+      }
+
+    } else
+    {
+      for( BlockRef engine : m_shipModel.getEngines() )
+        m_shipModel.enginePower().insert( engine.generalIndex( m_shipModel.modelSize() ), 0.0 );
+    }
   break;
 
   }

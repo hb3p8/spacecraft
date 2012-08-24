@@ -62,7 +62,7 @@ bool rayBoxIntersection( Vector3f rayStart, Vector3f rayDir, Vector3f boxMin,
 
 }
 
-int directionSideTest( Vector3f rayDir )
+int directionXZSideTest( Vector3f rayDir )
 {
   int side;
   rayDir.y() = 0;
@@ -73,6 +73,48 @@ int directionSideTest( Vector3f rayDir )
 
   side = axis;
   if( rayDir[ axis ] <= 0 ) side += 3;
+
+  return side;
+}
+
+int directionSideTest( Vector3f rayDir )
+{
+  int side;
+  int axis = 0;
+
+  float max = 0;
+  for( size_t i = 0; i < 3; i++ )
+  {
+    if( qAbs( rayDir[ i ] ) > max )
+    {
+      max = qAbs( rayDir[ i ] );
+      axis = i;
+    }
+  }
+
+  side = axis;
+  if( rayDir[ axis ] <= 0 ) side += 3;
+
+  return side;
+}
+
+int rotationYRemap[ 6 ] = { 2, 1, 3, 5, 4, 0 };
+int rotationZRemap[ 6 ] = { 4, 0, 2, 1, 3, 5 };
+
+int sideToOrientYRemap[ 6 ] = { 0, 0, 3, 2, 0, 1 };
+int sideToOrientZRemap[ 6 ] = { 0, 1, 0, 0, 3, 0 };
+
+int rotateSide( int side, int orient )
+{
+  assert( orient < 6 );
+
+  int rotationsY = sideToOrientYRemap[ orient ];
+  for( int c = 0; c < rotationsY; c++ )
+    side = rotationYRemap[ side ];
+
+  int rotationsZ = sideToOrientZRemap[ orient ];
+  for( int c = 0; c < rotationsZ; c++ )
+    side = rotationZRemap[ side ];
 
   return side;
 }

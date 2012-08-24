@@ -23,7 +23,9 @@ struct BlockData
 class ShipModel
 {
 public:
-  typedef std::vector<BlockRef> BlockRefArray;
+  typedef std::vector< BlockRef > BlockRefArray;
+  typedef QMap< int, float > InertiaCash;
+  typedef QMap< int, float > EngineFloatMap;
 
   ShipModel( size_t size = SHIP_MAX_SIZE_DEFAULT );
   ShipModel( std::string fileName );
@@ -37,6 +39,8 @@ public:
   void saveToFile( std::string fileName );
   void loadFromFile( std::string fileName, bool reallocateBlocks = false );
 
+  void process( float deltaTime );
+
   void optimize();
 
   Octree& getOctree() { return m_octree; }
@@ -47,13 +51,21 @@ public:
 
   Eigen::Vector3f getMassCenter(){ return m_massCenter; }
   float getMass(){ return m_mass; }
-  float getInertia( Eigen::Vector3f axis );
+  float getInertia( Eigen::Vector3f axis, BlockRef block );
 
   void findEngines();
-  BlockRefArray getEngines() { return m_engines; }
+  BlockRefArray& getEngines() { return m_engines; }
+  EngineFloatMap& enginePower() { return m_enginePower; }
+
+  Eigen::Vector3f& shipPosition() { return m_shipPosition; }
+  Eigen::AngleAxisf& shipRotation() { return m_shipRotation; }
+
+  size_t modelSize() { return m_size; }
 
 
 private:
+  void initialize();
+
   Intersection traverse( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, OctreeNode& node );
 
   float sqrDistToAxis( Eigen::Vector3f& axis, Eigen::Vector3f& point );
@@ -72,6 +84,16 @@ private:
   float m_mass;
 
   BlockRefArray m_engines;
+  InertiaCash m_inertiaCash;
+
+  Eigen::Vector3f m_shipPosition;
+  Eigen::Vector3f m_shipVelocity;
+
+  Eigen::AngleAxisf m_shipRotation;
+  Eigen::Vector3f m_shipAngularVelocity;
+
+  EngineFloatMap m_enginePower;
+
 
 };
 

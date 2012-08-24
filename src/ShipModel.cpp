@@ -16,8 +16,18 @@ int blockSpecs[ numBlockTypes ][ 6 ] =
   { 3, 0, 0, 0, 0, 0 }  // engine
 };
 
+void ShipModel::initialize()
+{
+  m_shipPosition = Vector3f::Zero();
+  m_shipVelocity = Vector3f::Zero();
+
+  m_shipRotation = AngleAxisf( 0.0, Vector3f::UnitX() );
+  m_shipAngularVelocity = Vector3f::Zero();
+}
+
 ShipModel::ShipModel( size_t size ): m_size( size )
 {
+  initialize();
   int center = m_size / 2;
   m_center = Vector3i( center, center, center );
 
@@ -36,6 +46,7 @@ ShipModel::ShipModel( size_t size ): m_size( size )
 
 ShipModel::ShipModel( std::string fileName ): m_blocks( NULL )
 {
+  initialize();
   loadFromFile( fileName, true );
 }
 
@@ -50,10 +61,6 @@ void ShipModel::buildMesh()
   int axisToSideRemap[ 7 ] = { 2, 1, 0, 6, 3, 4, 5 };
 
   int rowToSideRemap[ 6 ] = { 5, 2, 4, 1, 0, 3 };
-
-  int rotationYRemap[ 6 ] = { 2, 1, 3, 5, 4, 0 };
-
-  int sideToOrientYRemap[ 6 ] = { 0, 0, 3, 2, 0, 1 };
 
   float* vertices;
   float* normals;
@@ -141,10 +148,7 @@ void ShipModel::buildMesh()
         float ao = 0.6f + 0.4f * ( 9 - occluders[ side ] ) / 9.;
         color[ 0 ] = color[ 1 ] = color[ 2 ] = ao;
 
-        int orient = sideToOrientYRemap[ block.orientation ];
-        if( orient > 0 )
-        for( int c = 0; c < orient; c++ )
-          side = rotationYRemap[ side ];
+        side = rotateSide( side, block.orientation );
 
         int blockId = block.blockType - 1;
         int subTexId = blockSpecs[ blockId ][ side ];
@@ -206,6 +210,10 @@ void ShipModel::refreshModel()
   m_octree.build( this );
 
   buildMesh();
+
+  calculateMassCenter();
+  findEngines();
+  m_inertiaCash.clear();
 }
 
 bool ShipModel::octreeRaycastIntersect( Vector3f rayStart, Vector3f rayDir, Intersection& intersection )
@@ -413,8 +421,14 @@ float ShipModel::sqrDistToAxis( Vector3f& axis, Vector3f& pos )
   return ( distToMass - axis * ( distToMass.dot( axis ) / axis.squaredNorm() ) ).squaredNorm();
 }
 
-float ShipModel::getInertia( Vector3f axis )
+float ShipModel::getInertia( Vector3f axis, BlockRef engineBlock )
 {
+  InertiaCash::const_iterator i;
+
+  i = m_inertiaCash.find( engineBlock.generalIndex( m_size ) );
+  if( i != m_inertiaCash.end() )
+    return i.value();
+
   float inertia = 0;
 
   vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
@@ -427,6 +441,7 @@ float ShipModel::getInertia( Vector3f axis )
     inertia += sqrDistToAxis( axis, blockPos ) * mass;
   }
 
+  m_inertiaCash.insert( engineBlock.generalIndex( m_size ), inertia );
   return inertia;
 }
 
@@ -441,6 +456,49 @@ void ShipModel::findEngines()
     if( getBlock( block ).blockType == 4 )
       m_engines.push_back( block );
   }
+}
+
+void ShipModel::process( float deltaTime )
+{
+
+  for( BlockRef engineBlockRef : getEngines() )
+  {
+    EngineFloatMap::const_iterator i;
+    int idx = engineBlockRef.generalIndex( m_size );
+    i = m_enginePower.find( idx );
+    if( i == m_enginePower.end() || i.value() < 1e-6 )
+      continue;
+
+    float power = i.value();
+
+    int side = 0;
+    side = rotateSide( side, getBlock( engineBlockRef ).orientation );
+
+    Vector3f engineDir = (-1) * sideToNormal( side );
+
+    float engineForce = 0.1 * power;
+
+    Vector3f enginePos( engineBlockRef.position( 2. ) );
+    Vector3f angularVelDelta = engineDir.cross( enginePos - m_massCenter );
+
+    // изменение угловой скорости считаем в локальном пространстве модели
+    m_shipAngularVelocity += (-1) * angularVelDelta * engineForce /
+        getInertia( angularVelDelta, engineBlockRef );
+
+    // изменение скорости - в мировом пространстве (с учётом shipRotation)
+    engineDir = m_shipRotation * engineDir;
+    m_shipVelocity += engineDir * engineForce / m_mass;
+
+  }
+
+  m_shipPosition += m_shipVelocity * deltaTime;
+  assert( m_shipVelocity.x() != 1/0. && m_shipVelocity.y() != 1/0. &&  m_shipVelocity.z() != 1/0. );
+
+  if( m_shipAngularVelocity.norm() > 1e-5 )
+    m_shipRotation = m_shipRotation *
+        AngleAxisf( m_shipAngularVelocity.norm() * deltaTime, m_shipAngularVelocity.normalized() );
+
+
 }
 
 
