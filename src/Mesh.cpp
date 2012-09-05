@@ -1,73 +1,169 @@
 #include "Mesh.hpp"
 
-// количество вершин куба
-static const uint32_t cubeVerticesCount = 24;
-
-// описание геометрии куба для всех его сторон
-// координаты вершин куба
-const float s = 1.0f; // половина размера куба
-const float cubePositions[cubeVerticesCount][3] = {
-        {-s, s, s}, { s, s, s}, { s,-s, s}, {-s,-s, s}, // front
-        { s, s,-s}, {-s, s,-s}, {-s,-s,-s}, { s,-s,-s}, // back
-        {-s, s,-s}, { s, s,-s}, { s, s, s}, {-s, s, s}, // top
-        { s,-s,-s}, {-s,-s,-s}, {-s,-s, s}, { s,-s, s}, // bottom
-        {-s, s,-s}, {-s, s, s}, {-s,-s, s}, {-s,-s,-s}, // left
-        { s, s, s}, { s, s,-s}, { s,-s,-s}, { s,-s, s}  // right
-};
-
-// cube normals
-const float cubeNormals[cubeVerticesCount][3] = {
-        { 0, 0,-s}, { 0, 0,-s}, { 0, 0,-s}, { 0, 0,-s}, // front
-        { 0, 0, s}, { 0, 0, s}, { 0, 0, s}, { 0, 0, s}, // back
-        { 0, s, 0}, { 0, s, 0}, { 0, s, 0}, { 0, s, 0}, // top
-        { 0,-s, 0}, { 0,-s, 0}, { 0,-s, 0}, { 0,-s, 0}, // bottom
-        { s, 0, 0}, { s, 0, 0}, { s, 0, 0}, { s, 0, 0}, // left
-        {-s, 0, 0}, {-s, 0, 0}, {-s, 0, 0}, {-s, 0, 0}  // right
-};
-
-// текстурные координаты куба
-const float cubeTexcoords[cubeVerticesCount][2] = {
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // front
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // back
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // top
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // bottom
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}, // left
-        {0.0f,1.0f}, {1.0f,1.0f}, {1.0f,0.0f}, {0.0f,0.0f}  // right
-};
-
-// количество индексов куба
-const uint32_t cubeIndicesCount = 36;
-
-// индексы вершин куба в порядке поротив часовой стрелки
-const uint32_t cubeIndices[cubeIndicesCount] = {
-         0, 3, 1,  1, 3, 2, // front
-         4, 7, 5,  5, 7, 6, // back
-         8,11, 9,  9,11,10, // top
-        12,15,13, 13,15,14, // bottom
-        16,19,17, 17,19,18, // left
-        20,23,21, 21,23,22  // right
-};
-
 Mesh::Mesh():
   m_vertexBuffer( QGLBuffer::VertexBuffer ),
   m_normalBuffer( QGLBuffer::VertexBuffer ),
   m_texcoordBuffer( QGLBuffer::VertexBuffer ),
-  m_indexBuffer( QGLBuffer::IndexBuffer )
+  m_indexBuffer( QGLBuffer::IndexBuffer ),
+  m_colorBuffer( QGLBuffer::VertexBuffer )
 {
-  allocateBuffers( cubePositions, cubeNormals, cubeTexcoords,
-                         cubeIndices, cubeVerticesCount, cubeIndicesCount );
 }
 
-Mesh* Mesh::CreateCube()
+void Mesh::attachShader( QGLShaderProgram& shader )
 {
-  Mesh* cube = new Mesh();
+  m_shaderProgram = &shader;
 
-  return cube;
+//  m_vertexBuffer.bind();
+//  shader.setAttributeBuffer( "position", GL_FLOAT, 0, 3 );
+//  m_vertexBuffer.release();
+
+//  m_normalBuffer.bind();
+//  shader.setAttributeBuffer( "normal", GL_FLOAT, 0, 3 );
+//  m_normalBuffer.release();
+
+//  m_texcoordBuffer.bind();
+//  shader.setAttributeBuffer( "texcoord", GL_FLOAT, 0, 2 );
+//  m_texcoordBuffer.release();
+
+//  m_colorBuffer.bind();
+//  shader.setAttributeBuffer( "color", GL_FLOAT, 0, 3 );
+//  m_colorBuffer.release();
 }
 
-void Mesh::allocateBuffers( const void* positionsData, const void* normalsData,
-                            const void* texcoordsData, const void* indicesData,
-                            size_t verticesCount, size_t IndicesCount )
+void Mesh::drawIndexed()
+{
+
+  if( !isAllocated( m_indexBuffer ) || !isAllocated( m_vertexBuffer ) )
+  {
+    qWarning() << "You must allocate buffers to draw mesh!";
+    return;
+  }
+
+  m_vertexBuffer.bind();
+  m_shaderProgram->setAttributeBuffer( "position", GL_FLOAT, 0, 3 );
+  m_vertexBuffer.release();
+  m_shaderProgram->enableAttributeArray( "position" );
+
+  if( isAllocated( m_normalBuffer ) )
+  {
+    m_normalBuffer.bind();
+    m_shaderProgram->setAttributeBuffer( "normal", GL_FLOAT, 0, 3 );
+    m_normalBuffer.release();
+
+    m_shaderProgram->enableAttributeArray( "normal" );
+  }
+
+  if( isAllocated( m_texcoordBuffer ) )
+  {
+    m_texcoordBuffer.bind();
+    m_shaderProgram->setAttributeBuffer( "texcoord", GL_FLOAT, 0, 2 );
+    m_texcoordBuffer.release();
+
+    m_shaderProgram->enableAttributeArray( "texcoord" );
+  }
+
+  if( isAllocated( m_colorBuffer ) )
+  {
+    m_colorBuffer.bind();
+    m_shaderProgram->setAttributeBuffer( "color", GL_FLOAT, 0, 3 );
+    m_colorBuffer.release();
+
+    m_shaderProgram->enableAttributeArray( "color" );
+  }
+
+  m_indexBuffer.bind();
+
+  glDrawElements( GL_TRIANGLES, m_indicesCount, GL_UNSIGNED_INT, NULL );
+
+  m_shaderProgram->disableAttributeArray( "position" );
+  m_shaderProgram->disableAttributeArray( "normal" );
+  m_shaderProgram->disableAttributeArray( "texcoord" );
+  m_shaderProgram->disableAttributeArray( "color" );
+}
+
+void Mesh::drawSimple()
+{
+  static bool indexWarning = true;
+
+  if( !isAllocated( m_vertexBuffer ) )
+  {
+    qWarning() << "You must allocate buffers to draw mesh!";
+    return;
+  }
+
+  if( isAllocated( m_indexBuffer ) && indexWarning )
+  {
+    indexWarning = false;
+    qWarning() << "Indicecs allocated, so you must probably call indexedDraw() instead of draw()";
+  }
+
+  m_vertexBuffer.bind();
+  m_shaderProgram->setAttributeBuffer( "position", GL_FLOAT, 0, 3 );
+  m_vertexBuffer.release();
+  m_shaderProgram->enableAttributeArray( "position" );
+
+  if( isAllocated( m_normalBuffer ) )
+  {
+    m_normalBuffer.bind();
+    m_shaderProgram->setAttributeBuffer( "normal", GL_FLOAT, 0, 3 );
+    m_normalBuffer.release();
+
+    m_shaderProgram->enableAttributeArray( "normal" );
+  }
+
+  if( isAllocated( m_texcoordBuffer ) )
+  {
+    m_texcoordBuffer.bind();
+    m_shaderProgram->setAttributeBuffer( "texcoord", GL_FLOAT, 0, 2 );
+    m_texcoordBuffer.release();
+
+    m_shaderProgram->enableAttributeArray( "texcoord" );
+  }
+
+  if( isAllocated( m_colorBuffer ) )
+  {
+    m_colorBuffer.bind();
+    m_shaderProgram->setAttributeBuffer( "color", GL_FLOAT, 0, 3 );
+    m_colorBuffer.release();
+
+    m_shaderProgram->enableAttributeArray( "color" );
+  }
+
+  glDrawArrays( GL_TRIANGLES, 0, m_verticesCount );
+
+  m_shaderProgram->disableAttributeArray( "position" );
+  m_shaderProgram->disableAttributeArray( "normal" );
+  m_shaderProgram->disableAttributeArray( "texcoord" );
+  m_shaderProgram->disableAttributeArray( "color" );
+}
+
+void Mesh::writeIndexedData( const void* positionsData, const void* normalsData,
+                                    const void* texcoordsData, const void* indicesData, const void* colorsData,
+                                    uint32_t verticesCount, uint32_t indicesCount )
+{
+  writePositions( positionsData, verticesCount );
+  writeNormals( normalsData, verticesCount );
+  writeTexcoords( texcoordsData, verticesCount );
+  writeColors( colorsData, verticesCount );
+  writeIndices( indicesData, indicesCount );
+}
+
+
+void Mesh::writeSimpleData( const void* positionsData, const void* texcoordsData, uint32_t verticesCount )
+{
+  writePositions( positionsData, verticesCount );
+  writeTexcoords( texcoordsData, verticesCount );
+}
+
+bool Mesh::isAllocated( QGLBuffer& buffer )
+{
+  AllocationMap::const_iterator i;
+
+  i = m_bufferAllocationMap.find( &buffer );
+  return ( i != m_bufferAllocationMap.end() && i.value() == true );
+}
+
+void Mesh::writePositions( const void *positionsData, uint32_t count )
 {
   // vertex positions
   m_vertexBuffer.create();
@@ -77,9 +173,16 @@ void Mesh::allocateBuffers( const void* positionsData, const void* normalsData,
       qWarning() << "Could not bind vertex buffer to the context";
       return;
   }
-  m_vertexBuffer.allocate( positionsData, verticesCount * 3 * sizeof( float ) );
+  m_vertexBuffer.allocate( positionsData, count * 3 * sizeof( float ) );
   m_vertexBuffer.release();
 
+  m_verticesCount = count;
+
+  m_bufferAllocationMap.insert( &m_vertexBuffer, true );
+}
+
+void Mesh::writeNormals( const void *normalsData, uint32_t count )
+{
   // vertex normals
   m_normalBuffer.create();
   m_normalBuffer.setUsagePattern( QGLBuffer::StaticDraw );
@@ -88,9 +191,14 @@ void Mesh::allocateBuffers( const void* positionsData, const void* normalsData,
       qWarning() << "Could not bind normal buffer to the context";
       return;
   }
-  m_normalBuffer.allocate( normalsData, verticesCount * 3 * sizeof( float ) );
+  m_normalBuffer.allocate( normalsData, count * 3 * sizeof( float ) );
   m_normalBuffer.release();
 
+  m_bufferAllocationMap.insert( &m_normalBuffer, true );
+}
+
+void Mesh::writeTexcoords( const void *texcoordsData, uint32_t count )
+{
   // vertex texcoords
   m_texcoordBuffer.create();
   m_texcoordBuffer.setUsagePattern( QGLBuffer::StaticDraw );
@@ -99,9 +207,30 @@ void Mesh::allocateBuffers( const void* positionsData, const void* normalsData,
       qWarning() << "Could not bind texcoord buffer to the context";
       return;
   }
-  m_texcoordBuffer.allocate( texcoordsData, verticesCount * 2 * sizeof( float ) );
+  m_texcoordBuffer.allocate( texcoordsData, count * 2 * sizeof( float ) );
   m_texcoordBuffer.release();
 
+  m_bufferAllocationMap.insert( &m_texcoordBuffer, true );
+}
+
+void Mesh::writeColors( const void *colorsData, uint32_t count )
+{
+  // vertex colors
+  m_colorBuffer.create();
+  m_colorBuffer.setUsagePattern( QGLBuffer::StaticDraw );
+  if ( !m_colorBuffer.bind() )
+  {
+      qWarning() << "Could not bind color buffer to the context";
+      return;
+  }
+  m_colorBuffer.allocate( colorsData, count * 3 * sizeof( float ) );
+  m_colorBuffer.release();
+
+  m_bufferAllocationMap.insert( &m_colorBuffer, true );
+}
+
+void Mesh::writeIndices( const void *indicesData, uint32_t count )
+{
   // indices
   m_indexBuffer.create();
   m_indexBuffer.setUsagePattern( QGLBuffer::StaticDraw );
@@ -110,41 +239,12 @@ void Mesh::allocateBuffers( const void* positionsData, const void* normalsData,
       qWarning() << "Could not bind index buffer to the context";
       return;
   }
-  m_indexBuffer.allocate( indicesData, IndicesCount * sizeof( uint32_t ) );
-  m_texcoordBuffer.release();
+  m_indexBuffer.allocate( indicesData, count * sizeof( uint32_t ) );
+  m_indexBuffer.release();
+
+  m_indicesCount = count;
+
+  m_bufferAllocationMap.insert( &m_indexBuffer, true );
 }
 
-void Mesh::setAttributesToShader( QGLShaderProgram& shader )
-{
-  shade_prog=&shader;
-  m_vertexBuffer.bind();
-  shader.setAttributeBuffer( "position", GL_FLOAT, 0, 3 );
-  m_vertexBuffer.release();
 
-  m_normalBuffer.bind();
-  shader.setAttributeBuffer( "normal", GL_FLOAT, 0, 3 );
-  m_normalBuffer.release();
-
-  m_texcoordBuffer.bind();
-  shader.setAttributeBuffer( "texcoord", GL_FLOAT, 0, 2 );
-  m_texcoordBuffer.release();
-}
-
-void Mesh::draw()
-{
-    m_vertexBuffer.bind();
-    shade_prog->setAttributeBuffer( "position", GL_FLOAT, 0, 3 );
-    m_vertexBuffer.release();
-
-    m_normalBuffer.bind();
-    shade_prog->setAttributeBuffer( "normal", GL_FLOAT, 0, 3 );
-    m_normalBuffer.release();
-
-    m_texcoordBuffer.bind();
-    shade_prog->setAttributeBuffer( "texcoord", GL_FLOAT, 0, 2 );
-    m_texcoordBuffer.release();
-
-  m_indexBuffer.bind();
-
-  glDrawElements( GL_TRIANGLES, cubeIndicesCount, GL_UNSIGNED_INT, NULL );
-}

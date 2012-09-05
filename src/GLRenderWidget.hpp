@@ -2,24 +2,21 @@
 #define GLRENDERWIDGET_H
 
 #include <QGLWidget>
-#include <QGLBuffer>
-#include <QGLShaderProgram>
 #include <QTime>
 #include <QTimer>
 #include <QPoint>
 #include <QMap>
 
-#include "TextRender.hpp"
-#include "Camera.hpp"
-
-typedef QMap< Qt::Key, bool > InputMap;
+#include "EditorScene.hpp"
 
 class GLRenderWidget : public QGLWidget
 {
     Q_OBJECT
 public:
-    GLRenderWidget( const QGLFormat& format, QWidget* parent = 0 );
+    GLRenderWidget( const QGLFormat& format, ScenePtr scene, QWidget* parent = 0);
     ~GLRenderWidget();
+
+    float getFPS(){ return m_fps; }
 
 protected:
     virtual void initializeGL();
@@ -32,21 +29,11 @@ protected:
     virtual void mousePressEvent( QMouseEvent* e );
     virtual void wheelEvent( QWheelEvent* e );
 
-private slots:
-    void applyInput();
-
-
 private:
     void nextFrame();
 
-    static const int defaultXSize = 800;
-    static const int defaultYSize = 600;
-
-    QGLShaderProgram m_shader;
-    QGLBuffer m_vertexBuffer;
-    QGLBuffer m_normalBuffer;
-    QGLBuffer m_texcoordBuffer;
-    QGLBuffer m_indexBuffer;
+    static const int defaultXSize = 1024;
+    static const int defaultYSize = 768;
 
     QTimer* m_timer;
 
@@ -58,12 +45,7 @@ private:
     QTime* m_workTime;
     QTime* m_fpsTime;
 
-    TextRender m_text;
-
-    CameraPtr m_camera;
-    QPoint m_lastMousePos;
-
-    InputMap m_inputMap;
+    ScenePtr m_scene;
 
 };
 

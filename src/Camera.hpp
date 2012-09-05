@@ -16,57 +16,53 @@ public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Camera ( const Eigen::Vector3f &position = Eigen::Vector3f::Zero ( ),
-           const Eigen::Quaternionf &orientation =
-                                             Eigen::Quaternionf::Identity ( ) );
+  Camera ( const Eigen::Vector3f &position = Eigen::Vector3f::Zero(),
+           const Eigen::Vector3f &rotation = Eigen::Vector3f::Zero() );
 
   Camera ( const Camera &camera );
+
+  void viewportResize( int width, int height ) { m_viewportWidth = width; m_viewportHeight = height; }
+  void setFieldOfView( float FOV ) { m_fieldOfView = FOV; }
 
   QMatrix4x4 projectionMatrix() const;
   QMatrix4x4 viewMatrix() const;
 
-//  /*! Returns camera transformation in general form. */
-//  virtual Eigen::Transform3f transform() const = 0;
-//  /*! Sets camera transformation in general form. */
-//  virtual void setTransform( const Eigen::Transform3f &transform ) = 0;
-
-  /*! Returns camera position. */
   Eigen::Vector3f position() const;
-  /*! Sets camera position. */
+
   void setPosition( const Eigen::Vector3f &position );
+  void setPosition( const Eigen::Vector3d &position );
 
-  //! Returns orientation of the camera in the world space.
-  Eigen::Quaternionf orientation ( void ) const;
+  void setRotation( const Eigen::Vector3f& rotation );
+  void setRotation( const Eigen::AngleAxisf& rotation );
 
-  //! Sets orientation of the camera in the world space.
-  void setOrientation ( const Eigen::Quaternionf &orientation );
+  Eigen::AngleAxisf rotation() const;
 
-  //! Sets orientation of the camera in the world space.
-  void setOrientation ( const Eigen::AngleAxisf &orientation );
+  void eyeTurn( float dx, float dy );
 
-  /*! Rotates the camera in world space (using Euler angles). */
-  void rotate( const Eigen::Quaternionf &delta );
-  void rotate( const Eigen::AngleAxisf &delta );
-  /*! Translates the camera in local space (x-right, y-up, z-view). */
+  void rotate( const Eigen::Vector3f &delta );
+
   void translate( const Eigen::Vector3f &delta );
 
-  /*! Returns view vector of the camera. */
+
   Eigen::Vector3f view() const;
-  /*! Returns up vector of the camera. */
   Eigen::Vector3f up() const;
-  /*! Returns right vector of the camera. */
   Eigen::Vector3f right() const;
 
-protected:
+private:
 
-  /*! Camera position. */
   Eigen::Vector3f m_position;
 
-  Eigen::Quaternionf m_orientation;
+  Eigen::Vector3f m_curRotation;
+  Eigen::AngleAxisf m_rotation;
+
+  float m_viewportWidth;
+  float m_viewportHeight;
+  float m_fieldOfView;
+  float m_near;
+  float m_far;
 };
 
 typedef std::shared_ptr< Camera > CameraPtr;
-//typedef std::tr1::shared_ptr< Camera > BaseCameraPtr;
 
 
 #endif

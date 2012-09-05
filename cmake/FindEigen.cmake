@@ -1,6 +1,6 @@
 include(FindPackageHandleStandardArgs)
 
-find_path( EIGEN_INCLUDE_DIR  "Eigen/Core" PATH_SUFFIXES /eigen2 )  
+find_path( EIGEN_INCLUDE_DIR  "Eigen/Core" PATH_SUFFIXES /eigen3 )
 
 unset( EIGEN_FOUND )
 if( ${EIGEN_INCLUDE_DIR} STREQUAL EIGEN_INCLUDE_DIR-NOTFOUND )
