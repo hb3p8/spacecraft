@@ -498,7 +498,7 @@ void ShipModel::process( float deltaTime )
     m_shipRotation = m_shipRotation *
         AngleAxisd( m_shipAngularVelocity.norm() * deltaTime, m_shipAngularVelocity.normalized() );
 
-  //1231
+  //1231орпо
   //test3
   //qDebug("%.20f    %.50f",m_shipAngularVelocity.norm(), m_shipRotation.angle());
 
