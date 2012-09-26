@@ -6,6 +6,7 @@
 #include "Utils.hpp"
 #include "Mesh.hpp"
 #include "MeshData/Cube.hpp"
+#include "BaseSceneObject.hpp"
 
 
 #define SHIP_MAX_SIZE_DEFAULT 32
@@ -20,7 +21,7 @@ struct BlockData
   inline bool isEmpty() { return blockType == 0; }
 };
 
-class ShipModel
+class ShipModel: public BaseSceneObject
 {
 public:
   typedef std::vector< BlockRef > BlockRefArray;
@@ -43,22 +44,21 @@ public:
 
   void optimize();
 
+  void draw() { m_mesh.drawIndexed(); }
+  void attachShader( QGLShaderProgram& shader ){ m_mesh.attachShader( shader ); }
+
   Octree& getOctree() { return m_octree; }
   Mesh& getMesh() { return m_mesh; }
   size_t getSize() { return m_size; }
 
   Eigen::Vector3f calculateMassCenter();
 
-  Eigen::Vector3f getMassCenter(){ return m_massCenter; }
   float getMass(){ return m_mass; }
-  float getInertia( Eigen::Vector3f axis, BlockRef block );
+  float getInertia( Eigen::Vector3f axis, BlockRef block, int side );
 
   void findEngines();
   BlockRefArray& getEngines() { return m_engines; }
   EngineFloatMap& enginePower() { return m_enginePower; }
-
-  Eigen::Vector3f& shipPosition() { return m_shipPosition; }
-  Eigen::AngleAxisf& shipRotation() { return m_shipRotation; }
 
   size_t modelSize() { return m_size; }
 
@@ -80,17 +80,10 @@ private:
   Octree m_octree;
   Mesh m_mesh;
 
-  Eigen::Vector3f m_massCenter;
   float m_mass;
 
   BlockRefArray m_engines;
   InertiaCash m_inertiaCash;
-
-  Eigen::Vector3f m_shipPosition;
-  Eigen::Vector3f m_shipVelocity;
-
-  Eigen::AngleAxisf m_shipRotation;
-  Eigen::Vector3f m_shipAngularVelocity;
 
   EngineFloatMap m_enginePower;
 

@@ -24,7 +24,7 @@ class SimulatedScene : public Scene
 {
     Q_OBJECT
 public:
-    SimulatedScene( QString modelFileName = "default.txt" );
+    SimulatedScene();
     ~SimulatedScene();
 
 public:
@@ -42,6 +42,9 @@ public:
     virtual void mousePressEvent( QMouseEvent* e );
     virtual void wheelEvent( QWheelEvent* e );
 
+    bool addModelFromFile( QString modelFileName );
+    bool loadSceneFromFile( QString sceneFileName );
+
 private slots:
     void applyInput();
 
@@ -57,16 +60,18 @@ private:
 
     CameraPtr m_camera;
 
-    ShipModel m_shipModel;
+//    ShipModel& m_shipModel;
 
     Mesh m_starMesh;
 
     int m_lastTime;
 
-    Eigen::Vector3f m_velocity;
+    Eigen::Vector3f m_velocity;  //player
     Intersection m_minIntersection;
 
     QMap<std::string, GLuint> m_textures;
+
+    std::vector<BaseSceneObjectPtr> m_sceneObjects;
 
 };
 

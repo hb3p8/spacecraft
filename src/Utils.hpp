@@ -25,7 +25,7 @@ struct BlockRef
   BlockRef(): i( 0 ), j( 0 ), k( 0 ) {}
   BlockRef( int x, int y, int z ): i( x ), j( y ), k( z ) {}
 
-  inline int generalIndex( int size ) { return i + j * size + k * size * size; }
+  inline int generalIndex( int size, int side ) { return ( i + j * size + k * size * size ); }
   inline Eigen::Vector3f position( float blockSize )
     { return Eigen::Vector3f( blockSize * i, blockSize * j, blockSize * k ); }
 };
