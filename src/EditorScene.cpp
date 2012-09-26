@@ -29,6 +29,8 @@ EditorScene::EditorScene( QString modelFileName ) :
 {
   m_camera = CameraPtr( new Camera() );
 
+  projectionMatrix= m_camera->projectionMatrix();
+
   if( QFile::exists( modelFileName ) )
     m_shipModel.loadFromFile( modelFileName.toStdString(), true );
 }
@@ -91,8 +93,9 @@ void EditorScene::draw()
 
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+
+  //QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
   QMatrix4x4 modelMatrix;
-  QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
   QMatrix4x4 viewMatrix( m_camera->viewMatrix() );
   QMatrix4x4 viewStarMatrix( viewMatrix );
 
@@ -268,6 +271,7 @@ void EditorScene::applyInput()
 void EditorScene::viewportResize( int w, int h )
 {
   m_camera->viewportResize( w, qMax( h, 1 ) );
+  projectionMatrix= m_camera->projectionMatrix();
 }
 
 void EditorScene::keyPressEvent( QKeyEvent *e )

@@ -1,9 +1,7 @@
 #ifndef EDITOR_SCENE_H
 #define EDITOR_SCENE_H
 
-#include <QGLWidget>
 #include <QGLBuffer>
-#include <QGLShaderProgram>
 #include <QTime>
 #include <QTimer>
 #include <QPoint>

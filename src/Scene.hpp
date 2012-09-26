@@ -5,6 +5,7 @@
 #include <QMap>
 #include <QKeyEvent>
 #include <QGLWidget>
+#include <QGLShaderProgram>
 
 #include <memory>
 
@@ -33,6 +34,8 @@ public:
     virtual void wheelEvent( QWheelEvent* e ) = 0;
 
 protected:
+
+    QMatrix4x4 projectionMatrix;
 
     InputMap m_inputMap;
     QGLWidget* m_widget;

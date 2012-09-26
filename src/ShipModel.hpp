@@ -25,7 +25,7 @@ class ShipModel: public BaseSceneObject
 {
 public:
   typedef std::vector< BlockRef > BlockRefArray;
-  typedef QMap< int, float > InertiaCash;
+  typedef QMap< int, double > InertiaCash;
   typedef QMap< int, float > EngineFloatMap;
 
   ShipModel( size_t size = SHIP_MAX_SIZE_DEFAULT );
@@ -51,10 +51,10 @@ public:
   Mesh& getMesh() { return m_mesh; }
   size_t getSize() { return m_size; }
 
-  Eigen::Vector3f calculateMassCenter();
+  Eigen::Vector3d calculateMassCenter();
 
   float getMass(){ return m_mass; }
-  float getInertia( Eigen::Vector3f axis, BlockRef block, int side );
+  float getInertia( Eigen::Vector3d axis, BlockRef block, int side );
 
   void findEngines();
   BlockRefArray& getEngines() { return m_engines; }
@@ -68,7 +68,7 @@ private:
 
   Intersection traverse( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, OctreeNode& node );
 
-  float sqrDistToAxis( Eigen::Vector3f& axis, Eigen::Vector3f& point );
+  double sqrDistToAxis( Eigen::Vector3d& axis, Eigen::Vector3d& point );
 
   void buildMesh();
 

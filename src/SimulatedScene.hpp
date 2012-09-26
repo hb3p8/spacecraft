@@ -1,9 +1,7 @@
 #ifndef SIMULATED_SCENE_H
 #define SIMULATED_SCENE_H
 
-#include <QGLWidget>
 #include <QGLBuffer>
-#include <QGLShaderProgram>
 #include <QTime>
 #include <QTimer>
 #include <QPoint>
@@ -58,7 +56,7 @@ private:
     QPoint m_lastMousePos;
     TextRender m_text;
 
-    CameraPtr m_camera;
+    CameraPtr m_camera; //камеру и всё что можно наверно надо перенести в Scene
 
 //    ShipModel& m_shipModel;
 

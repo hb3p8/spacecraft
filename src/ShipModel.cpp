@@ -383,19 +383,19 @@ void ShipModel::optimize()
 
 }
 
-Eigen::Vector3f ShipModel::calculateMassCenter()
+Eigen::Vector3d ShipModel::calculateMassCenter()
 {
-  float massSum = 0.0;
-  Vector3f massCenter = Vector3f::Zero();
+  double massSum = 0.0;
+  Vector3d massCenter = Vector3d::Zero();
 
   vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
 
   for( BlockRef& block : blocks )
   {
-    float blockMass = 1.0;
+    double blockMass = 1.0;
     massSum += blockMass;
 
-    massCenter += blockMass * Vector3f( 2. * block.i, 2. * block.j, 2. * block.k );
+    massCenter += blockMass * Vector3d( 2. * block.i, 2. * block.j, 2. * block.k );
   }
 
   m_massCenter = massCenter / massSum;
@@ -404,14 +404,14 @@ Eigen::Vector3f ShipModel::calculateMassCenter()
   return m_massCenter;
 }
 
-float ShipModel::sqrDistToAxis( Vector3f& axis, Vector3f& pos )
+double ShipModel::sqrDistToAxis( Vector3d& axis, Vector3d& pos )
 {
-  Vector3f distToMass = m_massCenter - pos;
+  Vector3d distToMass = m_massCenter - pos;
 
   return ( distToMass - axis * ( distToMass.dot( axis ) / axis.squaredNorm() ) ).squaredNorm();
 }
 
-float ShipModel::getInertia( Vector3f axis, BlockRef engineBlock, int side )
+float ShipModel::getInertia( Vector3d axis, BlockRef engineBlock, int side )
 {
   InertiaCash::const_iterator i;
 
@@ -419,13 +419,13 @@ float ShipModel::getInertia( Vector3f axis, BlockRef engineBlock, int side )
   if( i != m_inertiaCash.end() )
     return i.value();
 
-  float inertia = 0;
+  double inertia = 0;
 
   vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
 
   for( BlockRef& block : blocks )
   {
-    Vector3f blockPos( 2. * block.i, 2. * block.j, 2. * block.k );
+    Vector3d blockPos( 2. * block.i, 2. * block.j, 2. * block.k );
     float mass = 1.0;
 
     inertia += sqrDistToAxis( axis, blockPos ) * mass;
@@ -464,12 +464,12 @@ void ShipModel::process( float deltaTime )
     int side = 0;
     side = rotateSide( side, getBlock( engineBlockRef ).orientation );
 
-    Vector3f engineDir = (-1) * sideToNormal( side );
+    Vector3d engineDir = (-1) * sideToNormal( side );
 
     float engineForce = 0.1 * power;
 
-    Vector3f enginePos( engineBlockRef.position( 2. ) );
-    Vector3f angularVelDelta = engineDir.cross( enginePos - m_massCenter );
+    Vector3d enginePos( engineBlockRef.position_double( 2. ) );
+    Vector3d angularVelDelta = engineDir.cross( enginePos - m_massCenter );
 
     // изменение угловой скорости считаем в локальном пространстве модели
     m_angularVelocity += (-1) * angularVelDelta * engineForce /
@@ -486,7 +486,7 @@ void ShipModel::process( float deltaTime )
 
   if( m_angularVelocity.norm() > 1e-5 )
     m_rotation = m_rotation *
-        AngleAxisf( m_angularVelocity.norm() * deltaTime, m_angularVelocity.normalized() );
+        AngleAxisd( m_angularVelocity.norm() * deltaTime, m_angularVelocity.normalized() );
 
 
 }
