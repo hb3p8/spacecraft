@@ -17,6 +17,10 @@ int main(int argc, char *argv[])
     QString fileToOpen( "default.txt" );
     ScenePtr startScenePtr;
     bool useEditorScene = true;
+<<<<<<< HEAD
+=======
+    bool openScene = false;
+>>>>>>> octree
 
     for( int i = 0; i < QApplication::arguments().size(); i++ )
     {
@@ -39,6 +43,18 @@ int main(int argc, char *argv[])
         skipNext = true;
         assert( i + 1 < QApplication::arguments().size() );
         fileToOpen = QApplication::arguments().at( i + 1 );
+<<<<<<< HEAD
+=======
+        openScene = false;
+      }
+
+      if( argument == "--scene" )
+      {
+        skipNext = true;
+        assert( i + 1 < QApplication::arguments().size() );
+        fileToOpen = QApplication::arguments().at( i + 1 );
+        openScene = true;
+>>>>>>> octree
       }
 
       if( argument == "--export" )
@@ -55,7 +71,16 @@ int main(int argc, char *argv[])
 
       if( argument == "--sim" )
       {
+<<<<<<< HEAD
         startScenePtr.reset( new SimulatedScene( fileToOpen ) );
+=======
+        SimulatedScene* scene = new SimulatedScene();
+        startScenePtr.reset( scene );
+        if( !openScene )
+          scene->addModelFromFile( fileToOpen );
+        else
+          scene->loadSceneFromFile( fileToOpen );
+>>>>>>> octree
         useEditorScene = false;
       }
 
@@ -72,8 +97,11 @@ int main(int argc, char *argv[])
     glFormat.setProfile( QGLFormat::CoreProfile );
     glFormat.setSampleBuffers( true );
 
+<<<<<<< HEAD
     //startScenePtr.reset( new SimulatedScene( fileToOpen ) );
 
+=======
+>>>>>>> octree
     GLRenderWidget* renderWidget = new GLRenderWidget( glFormat, startScenePtr, &w );
     startScenePtr->setWidget( renderWidget );
     w.setRenderWidget( renderWidget );

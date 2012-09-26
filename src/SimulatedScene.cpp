@@ -13,20 +13,78 @@
 
 #include <memory>
 #include <math.h>
+<<<<<<< HEAD
 
 using namespace Eigen;
 
 
 SimulatedScene::SimulatedScene( QString modelFileName ) :
+=======
+#include <iostream>
+#include <fstream>
+
+using namespace Eigen;
+using namespace std;
+
+
+SimulatedScene::SimulatedScene() :
+>>>>>>> octree
   Scene( NULL ),
   m_text( "LMMonoCaps10", 10, Qt::green ),
   m_lastTime( 0 ),
   m_velocity( Vector3f::Zero() )
 {
   m_camera = CameraPtr( new Camera() );
+<<<<<<< HEAD
 
   if( QFile::exists( modelFileName ) )
     m_shipModel.loadFromFile( modelFileName.toStdString(), true );
+=======
+}
+
+bool SimulatedScene::addModelFromFile( QString modelFileName )
+{
+  bool res = false;
+  if( QFile::exists( modelFileName ) )
+  {
+    m_sceneObjects.push_back( BaseSceneObjectPtr( new ShipModel( modelFileName.toStdString() ) ) );
+    res = true;
+  }
+  return res;
+}
+
+bool SimulatedScene::loadSceneFromFile( QString sceneFileName )
+{
+  bool res = false;
+  m_sceneObjects.clear();
+
+  if( QFile::exists( sceneFileName ) )
+  {
+    res = true;
+
+    ifstream infile;
+    infile.open( sceneFileName.toStdString().c_str() );
+
+    size_t objCount;
+    infile >> objCount;
+
+    for( size_t i = 0; i < objCount; i++ )
+    {
+      string modelFileName;
+      infile >> modelFileName;
+      float x, y, z;
+      infile >> x; infile >> y; infile >> z;
+
+      if( addModelFromFile( QString( modelFileName.c_str() ) ) )
+        m_sceneObjects.back()->position() = Vector3f( x, y, z );
+
+    }
+
+    infile.close();
+  }
+
+  return res;
+>>>>>>> octree
 }
 
 SimulatedScene::~SimulatedScene()
@@ -38,8 +96,13 @@ void SimulatedScene::initialize()
     assert( m_widget );
 
     if ( !prepareShaderProgram( m_cubeShader,
+<<<<<<< HEAD
                                 QString( SPACECRAFT_PATH ) + "/shaders/cube.vert",
                                 QString( SPACECRAFT_PATH ) + "/shaders/cube.frag" ) )
+=======
+                                QString( SPACECRAFT_PATH ) + "/shaders/blockMaterial.vert",
+                                QString( SPACECRAFT_PATH ) + "/shaders/blockMaterial.frag" ) )
+>>>>>>> octree
       return;
 
     if ( !prepareShaderProgram( m_starShader,
@@ -61,21 +124,35 @@ void SimulatedScene::initialize()
         return;
     }
 
+<<<<<<< HEAD
     m_shipModel.refreshModel();
     m_shipModel.calculateMassCenter();
+=======
+    for( BaseSceneObjectPtr obj: m_sceneObjects )
+    {
+      obj->refreshModel();
+      obj->attachShader( m_cubeShader );
+    }
+>>>>>>> octree
 
     StarBuilder stars;
     stars.buildStarMesh();
     m_starMesh.writeSimpleData( stars.getVertices(), stars.getTexcoords(), stars.getVerticeCount() );
     m_starMesh.attachShader( m_starShader );
 
+<<<<<<< HEAD
     m_shipModel.getMesh().attachShader( m_cubeShader );
 
+=======
+>>>>>>> octree
     m_cubeShader.release();
 
     m_camera->setPosition( Eigen::Vector3f( 0.0, 0.0, 0.0 ) );
 
+<<<<<<< HEAD
     m_shipModel.findEngines();
+=======
+>>>>>>> octree
 }
 
 bool engineRunning = false;
@@ -83,12 +160,16 @@ bool engineRunning = false;
 void SimulatedScene::draw()
 {
 
+<<<<<<< HEAD
   QVector3D rayPos( eigenVectorToQt( m_camera->position() ) );
   QVector3D rayDir( eigenVectorToQt( m_camera->view() ) );
 
   m_shipModel.octreeRaycastIntersect( m_camera->position(), m_camera->view(), m_minIntersection );
 
   QVector3D point = rayPos + rayDir * m_minIntersection.time;
+=======
+//  m_shipModel.octreeRaycastIntersect( m_camera->position(), m_camera->view(), m_minIntersection );
+>>>>>>> octree
 
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -121,6 +202,7 @@ void SimulatedScene::draw()
 
   glBindTexture( GL_TEXTURE_2D, m_textures.find( "block_faces" ).value() );
 
+<<<<<<< HEAD
   Mesh& mesh = m_shipModel.getMesh();
 
 
@@ -142,6 +224,26 @@ void SimulatedScene::draw()
 
 
   mesh.drawIndexed();
+=======
+  for( BaseSceneObjectPtr obj: m_sceneObjects )
+  {
+    modelMatrix.setToIdentity();
+    modelMatrix.translate( eigenVectorToQt( obj->position() ) );
+
+    modelMatrix.rotate( obj->rotation().angle() / M_PI * 180.,
+                        eigenVectorToQt( obj->rotation().axis() ) );
+
+    modelMatrix.translate( eigenVectorToQt( obj->getMassCenter() * (-1) ) );
+
+    m_cubeShader.setUniformValue( "projectionMatrix", projectionMatrix );
+    m_cubeShader.setUniformValue( "viewMatrix", viewMatrix );
+    m_cubeShader.setUniformValue( "modelMatrix", modelMatrix );
+    m_cubeShader.setUniformValue( "colorTexture", 0 );
+
+
+    obj->draw();
+  }
+>>>>>>> octree
 
   glBindTexture( GL_TEXTURE_2D, 0 );
 
@@ -152,15 +254,24 @@ void SimulatedScene::draw()
 
   m_text.add( "engine run\t", engineRunning );
 
+<<<<<<< HEAD
   //m_text.add( "mass center\t", m_shipModel.getMassCenter() );
+=======
+//  m_text.add( "mass center\t", m_shipModel.getMassCenter() );
+>>>>>>> octree
   m_text.draw( m_widget, 10, 15 );
   m_text.clear();
 
   m_text.add("+");
   m_text.draw( m_widget, m_widget->width()/2 - 2, m_widget->height()/2 + 3 );
   m_text.clear();
+<<<<<<< HEAD
 }
 
+=======
+
+}
+>>>>>>> octree
 
 
 void SimulatedScene::process( int newTime )
@@ -176,7 +287,12 @@ void SimulatedScene::process( int newTime )
 
   m_camera->translate( m_velocity * delta );
 
+<<<<<<< HEAD
   m_shipModel.process( delta );
+=======
+  for( BaseSceneObjectPtr obj: m_sceneObjects )
+    obj->process( delta );
+>>>>>>> octree
 }
 
 void SimulatedScene::applyInput()
@@ -229,6 +345,7 @@ void SimulatedScene::keyPressEvent( QKeyEvent *e )
       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     wireframeMode = !wireframeMode;
   break;
+<<<<<<< HEAD
 
   case Qt::Key_M:
     m_camera->setPosition( m_shipModel.getMassCenter() );
@@ -242,12 +359,34 @@ void SimulatedScene::keyPressEvent( QKeyEvent *e )
       {
         int idx = engine.generalIndex( m_shipModel.modelSize() );
         m_shipModel.enginePower().insert( idx, 1.0 );
+=======
+/*
+  case Qt::Key_M:
+    m_camera->setPosition( m_shipModel.getMassCenter() );
+  break;*/
+
+  case Qt::Key_E:
+    engineRunning = !engineRunning;
+    ShipModel& shipModel = *( dynamic_cast<ShipModel*>( m_sceneObjects[ 0 ].get() ) );
+    if( engineRunning )
+    {
+      for( BlockRef engine : shipModel.getEngines() )
+      {
+        int idx = engine.generalIndex( shipModel.modelSize(), shipModel.getBlock( engine ).orientation );
+        shipModel.enginePower().insert( idx, 1.0 );
+>>>>>>> octree
       }
 
     } else
     {
+<<<<<<< HEAD
       for( BlockRef engine : m_shipModel.getEngines() )
         m_shipModel.enginePower().insert( engine.generalIndex( m_shipModel.modelSize() ), 0.0 );
+=======
+      for( BlockRef engine : shipModel.getEngines() )
+        shipModel.enginePower().insert(
+              engine.generalIndex( shipModel.modelSize(), shipModel.getBlock( engine ).orientation ), 0.0 );
+>>>>>>> octree
     }
   break;
 

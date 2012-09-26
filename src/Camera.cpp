@@ -67,11 +67,16 @@ Vector3f Camera::position() const
   return m_position;
 }
 
+<<<<<<< HEAD
 void Camera::setPosition( const Eigen::Vector3f &position  )
+=======
+void Camera::setPosition( const Vector3f &position )
+>>>>>>> octree
 {
   m_position = position;
 }
 
+<<<<<<< HEAD
 void Camera::setPosition( const Eigen::Vector3d &position  )
 {
   Vector3f new_pos(position.x(),position.y(),position.z());
@@ -125,6 +130,55 @@ void Camera::translate( const Vector3f& delta )
   m_position += delta;
 }
 
+=======
+AngleAxisf Camera::rotation() const
+{
+  return m_rotation;
+}
+
+void Camera::setRotation( const Vector3f& rotation )
+{
+  m_rotation = AngleAxisf( rotation.z(), Vector3f::UnitZ() ) *
+              AngleAxisf( rotation.y(), Vector3f::UnitY() ) *
+              AngleAxisf( rotation.x(), Vector3f::UnitX() );
+}
+
+void Camera::setRotation( const AngleAxisf& rotation )
+{
+  m_rotation = rotation;
+}
+
+void Camera::eyeTurn( float dx, float dy )
+{
+  m_curRotation.x() += dy;
+
+  // don't allow head to flip over
+  m_curRotation.x() = m_curRotation.x() < M_PI / 2 ? m_curRotation.x() : M_PI / 2;
+  m_curRotation.x() = m_curRotation.x() > -M_PI / 2 ? m_curRotation.x() : -M_PI / 2;
+
+  m_curRotation.y() -= dx;
+  if (m_curRotation.y() < -M_PI)
+    m_curRotation.y() += M_PI * 2;
+  if (m_curRotation.y() > M_PI)
+    m_curRotation.y() -= M_PI * 2;
+
+  setRotation( m_curRotation );
+}
+
+void Camera::rotate( const Vector3f& delta )
+{
+  m_rotation = m_rotation *
+    AngleAxisf( delta.z(), Vector3f::UnitZ() ) *
+    AngleAxisf( delta.y(), Vector3f::UnitY() ) *
+    AngleAxisf( delta.x(), Vector3f::UnitX() );
+}
+
+void Camera::translate( const Vector3f& delta )
+{
+  m_position += delta;
+}
+
+>>>>>>> octree
 Vector3f Camera::view() const
 {
   return ( m_rotation * Vector3f( 0, 0, 1 ) ).normalized();
