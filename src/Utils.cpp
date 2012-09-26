@@ -119,20 +119,12 @@ int rotateSide( int side, int orient )
   return side;
 }
 
-<<<<<<< HEAD
-Vector3d sideToNormal( int side )
-=======
 Vector3f sideToNormal( int side )
->>>>>>> octree
 {
   int sideToRowRemap[ 6 ] = { 5, 2, 1, 4, 3, 0 };
 
   int index = cubeIndices[ sideToRowRemap[ side ] * 6 ];
-<<<<<<< HEAD
-  return Vector3d( cubeNormals[ index ][ 0 ],
-=======
   return Vector3f( cubeNormals[ index ][ 0 ],
->>>>>>> octree
                    cubeNormals[ index ][ 1 ],
                    cubeNormals[ index ][ 2 ] );
 }

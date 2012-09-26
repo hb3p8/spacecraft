@@ -25,26 +25,12 @@ struct BlockRef
   BlockRef(): i( 0 ), j( 0 ), k( 0 ) {}
   BlockRef( int x, int y, int z ): i( x ), j( y ), k( z ) {}
 
-<<<<<<< HEAD
-  inline int generalIndex( int size ) { return i + j * size + k * size * size; }
-
-  inline Eigen::Vector3f position( float blockSize )
-    { return Eigen::Vector3f( blockSize * i, blockSize * j, blockSize * k ); }
-
-  inline Eigen::Vector3d position_double( float blockSize )
-    { return Eigen::Vector3d( blockSize * i, blockSize * j, blockSize * k ); }
-};
-
-inline QVector3D eigenVectorToQt( Eigen::Vector3f v ) { return QVector3D( v.x(), v.y(), v.z() ); }
-inline QVector3D eigenVectorToQt( Eigen::Vector3d v ) { return QVector3D( v.x(), v.y(), v.z() ); }
-=======
   inline int generalIndex( int size, int side ) { return ( i + j * size + k * size * size ); }
   inline Eigen::Vector3f position( float blockSize )
     { return Eigen::Vector3f( blockSize * i, blockSize * j, blockSize * k ); }
 };
 
 inline QVector3D eigenVectorToQt( Eigen::Vector3f v ) { return QVector3D( v.x(), v.y(), v.z() ); }
->>>>>>> octree
 inline Eigen::Vector3f qtVectorToEigen( QVector3D v ) { return Eigen::Vector3f( v.x(), v.y(), v.z() ); }
 
 bool rayBoxIntersection( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, Eigen::Vector3f boxMin,
@@ -55,11 +41,7 @@ int directionXZSideTest( Eigen::Vector3f rayDir );
 
 int rotateSide( int side, int orient );
 
-<<<<<<< HEAD
-Eigen::Vector3d sideToNormal( int side );
-=======
 Eigen::Vector3f sideToNormal( int side );
->>>>>>> octree
 
 
 bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShaderPath,

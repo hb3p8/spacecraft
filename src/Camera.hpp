@@ -30,7 +30,6 @@ public:
   Eigen::Vector3f position() const;
 
   void setPosition( const Eigen::Vector3f &position );
-  void setPosition( const Eigen::Vector3d &position );
 
   void setRotation( const Eigen::Vector3f& rotation );
   void setRotation( const Eigen::AngleAxisf& rotation );
