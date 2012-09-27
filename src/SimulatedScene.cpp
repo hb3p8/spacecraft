@@ -28,8 +28,6 @@ SimulatedScene::SimulatedScene() :
 {
 
   m_camera = CameraPtr( new Camera() );
-
-  projectionMatrix = m_camera->projectionMatrix();
 }
 
 bool SimulatedScene::addModelFromFile( QString modelFileName )

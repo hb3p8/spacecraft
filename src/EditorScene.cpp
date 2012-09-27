@@ -29,8 +29,6 @@ EditorScene::EditorScene( QString modelFileName ) :
 {
   m_camera = CameraPtr( new Camera() );
 
-  projectionMatrix= m_camera->projectionMatrix();
-
   if( QFile::exists( modelFileName ) )
     m_shipModel.loadFromFile( modelFileName.toStdString(), true );
 }
@@ -271,7 +269,7 @@ void EditorScene::applyInput()
 void EditorScene::viewportResize( int w, int h )
 {
   m_camera->viewportResize( w, qMax( h, 1 ) );
-  projectionMatrix= m_camera->projectionMatrix();
+  projectionMatrix = m_camera->projectionMatrix();
 }
 
 void EditorScene::keyPressEvent( QKeyEvent *e )
