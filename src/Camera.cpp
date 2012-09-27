@@ -15,6 +15,7 @@ Camera::Camera ( const Eigen::Vector3f &position, const Eigen::Vector3f &rotatio
   m_near( 0.1 ),
   m_far( 1000 )
 {
+    setRotation( m_curRotation );
 }
 
 Camera::Camera ( const Camera &camera ) :

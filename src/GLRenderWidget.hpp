@@ -1,7 +1,6 @@
 #ifndef GLRENDERWIDGET_H
 #define GLRENDERWIDGET_H
 
-#include <QGLWidget>
 #include <QTime>
 #include <QTimer>
 #include <QPoint>

@@ -17,20 +17,20 @@ public:
   virtual void attachShader( QGLShaderProgram& shader ) {}
   virtual void refreshModel() {}
 
-  Eigen::Vector3f getMassCenter(){ return m_massCenter; }
+  Eigen::Vector3d getMassCenter(){ return m_massCenter; }
 
-  Eigen::Vector3f& position() { return m_position; }
-  Eigen::AngleAxisf& rotation() { return m_rotation; }
+  Eigen::Vector3d& position() { return m_position; }
+  Eigen::AngleAxisd& rotation() { return m_rotation; }
 
 protected:
 
-  Eigen::Vector3f m_position;
-  Eigen::Vector3f m_velocity;
+  Eigen::Vector3d m_position;
+  Eigen::Vector3d m_velocity;
 
-  Eigen::AngleAxisf m_rotation;
-  Eigen::Vector3f m_angularVelocity;
+  Eigen::AngleAxisd m_rotation;
+  Eigen::Vector3d m_angularVelocity;
 
-  Eigen::Vector3f m_massCenter;
+  Eigen::Vector3d m_massCenter;
 
 };
 

@@ -70,6 +70,7 @@ void GLRenderWidget::paintGL()
 
 void GLRenderWidget::resizeGL( int w, int h )
 {
+    m_scene->viewportResize(w,h); //подгонка матрицы проекции под размер окна
     glViewport( 0, 0, w, qMax( h, 1 ) );
 }
 

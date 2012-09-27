@@ -26,6 +26,7 @@ SimulatedScene::SimulatedScene() :
   m_lastTime( 0 ),
   m_velocity( Vector3f::Zero() )
 {
+
   m_camera = CameraPtr( new Camera() );
 }
 
@@ -63,7 +64,7 @@ bool SimulatedScene::loadSceneFromFile( QString sceneFileName )
       infile >> x; infile >> y; infile >> z;
 
       if( addModelFromFile( QString( modelFileName.c_str() ) ) )
-        m_sceneObjects.back()->position() = Vector3f( x, y, z );
+        m_sceneObjects.back()->position() = Vector3d( x, y, z );
 
     }
 
@@ -132,7 +133,7 @@ void SimulatedScene::draw()
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
   QMatrix4x4 modelMatrix;
-  QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
+  //QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
   QMatrix4x4 viewMatrix( m_camera->viewMatrix() );
   QMatrix4x4 viewStarMatrix( viewMatrix );
 
@@ -168,7 +169,7 @@ void SimulatedScene::draw()
     modelMatrix.rotate( obj->rotation().angle() / M_PI * 180.,
                         eigenVectorToQt( obj->rotation().axis() ) );
 
-    modelMatrix.translate( eigenVectorToQt( obj->getMassCenter() * (-1) ) );
+    modelMatrix.translate( eigenVectorToQt( (Vector3d)(obj->getMassCenter() * (-1)) ) );//по-моему если от объекта чёт отвалится и центр масс сместится тут будет косяк (объект "внезапно" переместится с учётам нового цнтра масс)
 
     m_cubeShader.setUniformValue( "projectionMatrix", projectionMatrix );
     m_cubeShader.setUniformValue( "viewMatrix", viewMatrix );
@@ -249,6 +250,7 @@ void SimulatedScene::applyInput()
 void SimulatedScene::viewportResize( int w, int h )
 {
   m_camera->viewportResize( w, qMax( h, 1 ) );
+  projectionMatrix = m_camera->projectionMatrix();
 }
 
 void SimulatedScene::keyPressEvent( QKeyEvent *e )
