@@ -98,6 +98,15 @@ int directionSideTest( Vector3f rayDir )
   return side;
 }
 
+/*
+ * int rotateSide( int side, int orient )
+ *
+ * С помощью orient закодировано вращение блока.
+ * side это сторона из которой поворотами нужно получить нужную.
+ * sideToOrientYRemap - отношение orient к количеству необходимых поворотов по Y
+ * rotationYRemap - преобразование поворота
+ */
+
 int rotationYRemap[ 6 ] = { 2, 1, 3, 5, 4, 0 };
 int rotationZRemap[ 6 ] = { 4, 0, 2, 1, 3, 5 };
 
