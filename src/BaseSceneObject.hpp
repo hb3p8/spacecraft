@@ -22,8 +22,7 @@ public:
   Eigen::Vector3d& position() { return m_position; }
   Eigen::AngleAxisd& rotation() { return m_rotation; }
 
-protected:
-
+protected:  
   Eigen::Vector3d m_position;
   Eigen::Vector3d m_velocity;
 
@@ -31,6 +30,8 @@ protected:
   Eigen::Vector3d m_angularVelocity;
 
   Eigen::Vector3d m_massCenter;
+
+  int m_id;
 
 };
 

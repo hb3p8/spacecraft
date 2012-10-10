@@ -111,6 +111,9 @@ macro( make_qt_sources )
   
 endmacro()
 
+macro( build_tests )
+
+endmacro()
 
 macro( make_qt_project )
   make_qt_sources()

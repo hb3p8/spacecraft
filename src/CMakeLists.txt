@@ -9,4 +9,7 @@ add_definitions ( -DSPACECRAFT_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}\" )
 
 set( Game_SUBDIRECTORIES MeshData )
 
+set( Game_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests )
+
 make_qt_project()
+build_tests()

@@ -3,6 +3,7 @@
 #include "GLRenderWidget.hpp"
 #include "EditorScene.hpp"
 #include "SimulatedScene.hpp"
+#include "SimulatedSceneServer.hpp"
 #include <iostream>
 #include <QGLFormat>
 
@@ -29,6 +30,7 @@ int main(int argc, char *argv[])
         cout << "Spacecraft can handle these arguments:" << endl;
         cout << "\t--help\n\t\tto print this message" << endl;
         cout << "\t--model <file_name>\n\t\tto load model from file" << endl;
+        cout << "\t--scene <file_name>\n\t\tto load scene from file" << endl;
         cout << "\t--export <file_name>\n\t\tto optimize model and save to file" << endl;
         cout << "\t--sim \n\t\tto open model in simulation scene" << endl;
         cout << flush;
@@ -60,6 +62,16 @@ int main(int argc, char *argv[])
         ShipModel model( fileToOpen.toStdString() );
         model.optimize();
         model.saveToFile( saveFile.toStdString() );
+        return 0;
+      }
+
+      if( argument == "--serv" )
+      {
+        SimulatedSceneServer* scene = new SimulatedSceneServer();
+        if( !openScene )
+          scene->addModelFromFile( fileToOpen );
+        else
+          scene->loadSceneFromFile( fileToOpen );
         return 0;
       }
 

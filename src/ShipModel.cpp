@@ -17,7 +17,7 @@ int blockSpecs[ numBlockTypes ][ 6 ] =
 };
 
 
-ShipModel::ShipModel( size_t size ): m_size( size )
+ShipModel::ShipModel( size_t size ): BaseSceneObject(), m_size( size )
 {
   int center = m_size / 2;
   m_center = Vector3i( center, center, center );
