@@ -121,7 +121,7 @@ int rotateSide( int side, int orient )
 
 Vector3d sideToNormal( int side )
 {
-  int sideToRowRemap[ 6 ] = { 5, 2, 1, 4, 3, 0 };
+  int sideToRowRemap[ 6 ] = { 4, 2, 0, 5, 3, 1 };
 
   int index = cubeIndices[ sideToRowRemap[ side ] * 6 ];
   return Vector3d( cubeNormals[ index ][ 0 ],

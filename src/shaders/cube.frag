@@ -16,7 +16,7 @@ in vec3 fragColor;
 // результирующий цвет пикселя на экране
 out vec4 color;
 
-vec3 light = vec3( 3., -0., -6. ); 
+vec3 light = vec3( -10.0, 15.0, 0.0 ); 
 
 void main(void)
 {
@@ -26,7 +26,7 @@ void main(void)
     // получим цвет пикселя из текстуры по текстурным координатам
     color = ( /*vec4( 1.0 )*/ texture(colorTexture, fragTexcoord) + baseColor ) *
         vec4( fragColor, 1.0 ) *
-        ( 0.6  + 0.2 * max( dot( norm, normalize( position - light ) ), 0.2 ) ) *
+        ( 0.3  + 0.7 * max( dot( norm, normalize( light - position ) ), 0.1 ) ) *
         ( dist < 0.08 ? vec4( 1.0, 0.0, 0.0, 1.0 ) : vec4( 1.0, 1.0, 1.0, 1.0 ) ) ;
     color.w = 1.0;
 }

@@ -13,12 +13,12 @@ const float cubePositions[cubeVerticesCount][3] = {
 };
 
 const float cubeNormals[cubeVerticesCount][3] = {
-        { 0, 0,-1.0}, { 0, 0,-1.0}, { 0, 0,-1.0}, { 0, 0,-1.0}, // front
-        { 0, 0, 1.0}, { 0, 0, 1.0}, { 0, 0, 1.0}, { 0, 0, 1.0}, // back
+        { 0, 0, 1.0}, { 0, 0, 1.0}, { 0, 0, 1.0}, { 0, 0, 1.0}, // front
+        { 0, 0,-1.0}, { 0, 0,-1.0}, { 0, 0,-1.0}, { 0, 0,-1.0}, // back
         { 0, 1.0, 0}, { 0, 1.0, 0}, { 0, 1.0, 0}, { 0, 1.0, 0}, // top
         { 0,-1.0, 0}, { 0,-1.0, 0}, { 0,-1.0, 0}, { 0,-1.0, 0}, // bottom
-        { 1.0, 0, 0}, { 1.0, 0, 0}, { 1.0, 0, 0}, { 1.0, 0, 0}, // left
-        {-1.0, 0, 0}, {-1.0, 0, 0}, {-1.0, 0, 0}, {-1.0, 0, 0}  // right
+        {-1.0, 0, 0}, {-1.0, 0, 0}, {-1.0, 0, 0}, {-1.0, 0, 0}, // left
+        { 1.0, 0, 0}, { 1.0, 0, 0}, { 1.0, 0, 0}, { 1.0, 0, 0}  // right
 };
 
 const float cubeTexcoords[cubeVerticesCount][2] = {
@@ -42,12 +42,12 @@ const float cubeColors[cubeVerticesCount][3] = {
 const uint32_t cubeIndicesCount = 36;
 
 const uint32_t cubeIndices[cubeIndicesCount] = {
-         0, 3, 1,  1, 3, 2, // front 5
+         0, 3, 1,  1, 3, 2, // front 4
          4, 7, 5,  5, 7, 6, // back 2
-         8,11, 9,  9,11,10, // top 4
-        12,15,13, 13,15,14, // bottom 1
-        16,19,17, 17,19,18, // left 0
-        20,23,21, 21,23,22  // right 3
+         8,11, 9,  9,11,10, // top 0
+        12,15,13, 13,15,14, // bottom 5
+        16,19,17, 17,19,18, // left 3
+        20,23,21, 21,23,22  // right 1
 };
 
 #endif // CUBE_HPP

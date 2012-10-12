@@ -76,6 +76,21 @@ int main(int argc, char *argv[])
 
     }
 
+     //Sim debug
+    if(0)
+    {
+        SimulatedScene* scene = new SimulatedScene();
+
+        fileToOpen="scene.txt";
+
+        startScenePtr.reset( scene );
+
+        scene->loadSceneFromFile( fileToOpen );
+        useEditorScene = false;
+    }
+
+    //------------------------------------------------------
+
     if( useEditorScene )
     {
       startScenePtr.reset( new EditorScene( fileToOpen ) );
