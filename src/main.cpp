@@ -107,7 +107,6 @@ int main(int argc, char *argv[])
     w.setRenderWidget( renderWidget );
 
     w.show();
-
     
     return a.exec();
 }

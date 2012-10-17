@@ -17,7 +17,9 @@ int blockSpecs[ numBlockTypes ][ 6 ] =
 };
 
 
-ShipModel::ShipModel( size_t size ): m_size( size )
+ShipModel::ShipModel( float* initial_WTR, size_t size ):
+  m_size( size ),
+  WORLD_TIME_RATIO( *initial_WTR )
 {
   int center = m_size / 2;
   m_center = Vector3i( center, center, center );
@@ -35,9 +37,13 @@ ShipModel::ShipModel( size_t size ): m_size( size )
       }
 }
 
-ShipModel::ShipModel( std::string fileName ): m_blocks( NULL )
+ShipModel::ShipModel( std::string fileName,  float* initial_WTR ):
+  m_blocks( NULL ),
+  WORLD_TIME_RATIO( *initial_WTR )
 {
   loadFromFile( fileName, true );
+
+  WORLD_TIME_RATIO = *initial_WTR;
 }
 
 ShipModel::~ShipModel()
@@ -137,9 +143,17 @@ void ShipModel::buildMesh()
         float* color = colors + index * 3;
         float ao = 0.6f + 0.4f * ( 9 - occluders[ side ] ) / 9.;
         color[ 0 ] = color[ 1 ] = color[ 2 ] = ao;
-
+/*
+        int ori=block.orientation ;
+        if(ori==2)
+        {
+            cout<<1;
+        }*/
         side = rotateSide( side, block.orientation );
 
+        /*int fuck=ori;
+        cout<<fuck;
+*/
         int blockId = block.blockType - 1;
         int subTexId = blockSpecs[ blockId ][ side ];
 
@@ -473,12 +487,11 @@ void ShipModel::process( float deltaTime )
 
     // изменение угловой скорости считаем в локальном пространстве модели
     m_angularVelocity += (-1) * angularVelDelta * engineForce /
-        getInertia( angularVelDelta, engineBlockRef, side );
+        getInertia( angularVelDelta, engineBlockRef, side ) * (deltaTime * WORLD_TIME_RATIO);
 
     // изменение скорости - в мировом пространстве (с учётом shipRotation)
     engineDir = m_rotation * engineDir;
-    m_velocity += engineDir * engineForce / m_mass;
-
+    m_velocity += engineDir * engineForce / m_mass * (deltaTime * WORLD_TIME_RATIO);
   }
 
   m_position += m_velocity * deltaTime;
