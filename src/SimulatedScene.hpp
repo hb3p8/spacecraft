@@ -43,6 +43,9 @@ public:
     bool addModelFromFile( QString modelFileName );
     bool loadSceneFromFile( QString sceneFileName );
 
+signals:
+
+
 private slots:
     void applyInput();
 
@@ -70,6 +73,7 @@ private:
     QMap<std::string, GLuint> m_textures;
 
     std::vector<BaseSceneObjectPtr> m_sceneObjects;
+    std::vector<std::string> m_sceneObjectNames;
 
 };
 

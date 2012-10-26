@@ -11,6 +11,16 @@
 #include "Camera.hpp"
 #include "ShipModel.hpp"
 
+typedef int IDType;
+
+struct ClientData
+{
+  ClientData( IDType _id ): id(_id) {}
+  IDType id;
+  std::string modelName;
+};
+
+typedef QMap<IDType, ClientData> ClientMap;
 
 class SimulatedSceneServer: public QObject
 {
@@ -25,7 +35,12 @@ public:
     bool addModelFromFile( QString modelFileName );
     bool loadSceneFromFile( QString sceneFileName );
 
-private slots:
+public slots:
+    IDType registerClient();
+    void getModel( IDType id, std::string modelName );
+
+signals:
+    void requestModel();
 
 private:
     int m_lastTime;
@@ -34,7 +49,9 @@ private:
     Intersection m_minIntersection;
 
     std::vector<BaseSceneObjectPtr> m_sceneObjects;
-    std::vector<std::string> m_sceneObjectNames;
+
+    ClientMap m_clients;
+    //std::vector<Client> m_clients;
 
 };
 

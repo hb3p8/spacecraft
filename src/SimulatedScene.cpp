@@ -36,6 +36,7 @@ bool SimulatedScene::addModelFromFile( QString modelFileName )
   if( QFile::exists( modelFileName ) )
   {
     m_sceneObjects.push_back( BaseSceneObjectPtr( new ShipModel( modelFileName.toStdString() ) ) );
+    m_sceneObjectNames.push_back( modelFileName.toStdString() );
     res = true;
   }
   return res;

@@ -28,7 +28,6 @@ bool SimulatedSceneServer::addModelFromFile( QString modelFileName )
   if( QFile::exists( modelFileName ) )
   {
     m_sceneObjects.push_back( BaseSceneObjectPtr( new ShipModel( modelFileName.toStdString() ) ) );
-    m_sceneObjectNames.push_back( modelFileName.toStdString() );
     res = true;
   }
   return res;
@@ -90,33 +89,25 @@ void SimulatedSceneServer::process( int newTime )
     obj->process( delta );
 }
 
-//void SimulatedSceneServer::applyInput()
-//{
-//  Vector3f delta( 0.0F, 0.0F, 0.0F );
-//  Vector3f deltaVelocity;
-//  float scale = 1.0;
+IDType SimulatedSceneServer::registerClient()
+{
+  static int id = 0;
 
-//  InputMap::const_iterator i;
+  m_clients.insert( id, ClientData( id ) );
 
-//  i = m_inputMap.find( Qt::Key_W );
-//  if( i != m_inputMap.end() && i.value() == true )
-//    delta[ 2 ] += 1.0;
+  return id;
+}
 
-//  i = m_inputMap.find( Qt::Key_S );
-//  if( i != m_inputMap.end() && i.value() == true )
-//    delta[ 2 ] -= 1.0;
+void SimulatedSceneServer::getModel( IDType id, std::string modelName )
+{
+  ClientMap::const_iterator i;
 
-//  i = m_inputMap.find( Qt::Key_A );
-//  if( i != m_inputMap.end() && i.value() == true )
-//    delta[ 0 ] += 1.0;
+  i = m_clients.find( id );
+  if( i != m_clients.end() )
+  {
+    ClientData& data = i.value();
+    data.modelName = modelName;
+  }
+}
 
-//  i = m_inputMap.find( Qt::Key_D );
-//  if( i != m_inputMap.end() && i.value() == true )
-//    delta[ 0 ] -= 1.0;
-
-//  deltaVelocity = m_camera->rotation() * delta;
-
-//  m_velocity += deltaVelocity * scale;
-
-//}
 

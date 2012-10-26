@@ -68,10 +68,9 @@ int main(int argc, char *argv[])
       if( argument == "--serv" )
       {
         SimulatedSceneServer* scene = new SimulatedSceneServer();
-        if( !openScene )
-          scene->addModelFromFile( fileToOpen );
-        else
+        if( openScene )
           scene->loadSceneFromFile( fileToOpen );
+
         return 0;
       }
 
