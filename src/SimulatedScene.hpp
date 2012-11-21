@@ -15,17 +15,33 @@
 #include "ShipModel.hpp"
 #include "Mesh.hpp"
 
+//#include "Messages/ClientMessageHandler.h"
+#include "Messages/MessageTypes.h"
+#include "Messages/Dispatcher.h"
+
+namespace mes = messages;
+
+QT_BEGIN_NAMESPACE
+  class QTcpSocket;
+QT_END_NAMESPACE
 
 class GLRenderWidget;
+namespace messages
+{
+  template <typename MessageTypes>
+  class ClientHandler;
+}
 
 class SimulatedScene : public Scene
 {
     Q_OBJECT
+
+  friend class mes::ClientHandler<mes::MessageTypes>;
+
 public:
     SimulatedScene();
     ~SimulatedScene();
 
-public:
     virtual void initialize();
     virtual void draw();
 
@@ -43,7 +59,13 @@ public:
     bool addModelFromFile( QString modelFileName );
     bool loadSceneFromFile( QString sceneFileName );
 
-signals:
+    void connectToServer( QString addres, int port );
+
+
+public slots:
+//    void handleModelRequest();
+//    void handleDataUpdate( UpdateStruct ustruct );
+    void readMessage();
 
 
 private slots:
@@ -53,15 +75,17 @@ private slots:
 private:
     void buildStarMesh();
 
+    QTcpSocket* m_tcpSocket;
+    mes::Dispatcher<mes::MessageTypes> m_dispatcher;
+    mes::ClientHandler<mes::MessageTypes>* m_handler;
+
     QGLShaderProgram m_cubeShader;
     QGLShaderProgram m_starShader;
 
     QPoint m_lastMousePos;
     TextRender m_text;
 
-    CameraPtr m_camera; //камеру и всё что можно наверно надо перенести в Scene
-
-//    ShipModel& m_shipModel;
+    CameraPtr m_camera;
 
     Mesh m_starMesh;
 
@@ -74,6 +98,8 @@ private:
 
     std::vector<BaseSceneObjectPtr> m_sceneObjects;
     std::vector<std::string> m_sceneObjectNames;
+
+    int m_ID;
 
 };
 

@@ -35,7 +35,10 @@ ShipModel::ShipModel( size_t size ): BaseSceneObject(), m_size( size )
       }
 }
 
-ShipModel::ShipModel( std::string fileName ): m_blocks( NULL )
+ShipModel::ShipModel( std::string fileName, bool noGraphics ):
+  BaseSceneObject(),
+  m_blocks( NULL ),
+  m_noGraphics( noGraphics )
 {
   loadFromFile( fileName, true );
 }
@@ -199,7 +202,8 @@ void ShipModel::refreshModel()
 {
   m_octree.build( this );
 
-  buildMesh();
+  if( !m_noGraphics )
+    buildMesh();
 
   calculateMassCenter();
   findEngines();
@@ -214,6 +218,7 @@ bool ShipModel::octreeRaycastIntersect( Vector3f rayStart, Vector3f rayDir, Inte
   return intersection.side != SIDE_NO_INTERSECTION;
 }
 
+// TODO: может перенести это куда-нибудь ближе к октри
 Intersection ShipModel::traverse( Vector3f rayStart, Vector3f rayDir, OctreeNode& node )
 {
   float newTime;

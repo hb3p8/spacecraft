@@ -11,38 +11,85 @@
 #include "Camera.hpp"
 #include "ShipModel.hpp"
 
-typedef int IDType;
+#include "Messages/MessageTypes.h"
+#include "Messages/Dispatcher.h"
 
-struct ClientData
+namespace mes = messages;
+
+QT_BEGIN_NAMESPACE
+  class QTcpServer;
+  class QTcpSocket;
+QT_END_NAMESPACE
+
+namespace messages
 {
-  ClientData( IDType _id ): id(_id) {}
+  template <typename MessageTypes>
+  class ServerHandler;
+}
+
+typedef qint32 IDType;
+class SimulatedSceneServer;
+
+class ClientData: public QObject
+{
+  Q_OBJECT
+
+  friend class SimulatedSceneServer;
+
+public:
+  ClientData( SimulatedSceneServer* _server, IDType _id, QTcpSocket* _connection );
+
+public slots:
+  void newMessage();
+
+private:
+  SimulatedSceneServer* server;
   IDType id;
+  QTcpSocket* connection;
   std::string modelName;
+  ShipModel* model;
 };
 
-typedef QMap<IDType, ClientData> ClientMap;
+typedef QMap<IDType, ClientData*> ClientMap;
 
 class SimulatedSceneServer: public QObject
 {
     Q_OBJECT
+
+    friend class mes::ServerHandler<mes::MessageTypes>;
+
 public:
     SimulatedSceneServer();
     ~SimulatedSceneServer();
 
-public:
+//    void doRequestModels() { emit requestModel(); }
+    QString getServerAddres();
+    int getServerPort();
+
+public slots:
+    void registerClient();
+    void getModel( int id, std::string modelName );
+    void enableEngines( int id, bool enabled );
+    void work();
+
+    void readMessage( QTcpSocket* connection );
+
+signals:
+//    void requestModel();
+//    void updateClientData( UpdateStruct );
+
+private:
     void process( int newTime );
 
     bool addModelFromFile( QString modelFileName );
     bool loadSceneFromFile( QString sceneFileName );
 
-public slots:
-    IDType registerClient();
-    void getModel( IDType id, std::string modelName );
+    QTcpServer* m_tcpServer;
+    mes::Dispatcher<mes::MessageTypes> m_dispatcher;
+    mes::ServerHandler<mes::MessageTypes>* m_handler;
 
-signals:
-    void requestModel();
-
-private:
+    QTimer* m_timer;
+    QTime* m_workTime;
     int m_lastTime;
 
     Eigen::Vector3f m_velocity;  //player
@@ -52,6 +99,8 @@ private:
 
     ClientMap m_clients;
     //std::vector<Client> m_clients;
+
+
 
 };
 

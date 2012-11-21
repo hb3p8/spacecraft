@@ -4,7 +4,9 @@
 #include "EditorScene.hpp"
 #include "SimulatedScene.hpp"
 #include "SimulatedSceneServer.hpp"
+
 #include <iostream>
+
 #include <QGLFormat>
 
 using namespace std;
@@ -67,9 +69,47 @@ int main(int argc, char *argv[])
 
       if( argument == "--serv" )
       {
-        SimulatedSceneServer* scene = new SimulatedSceneServer();
+        SimulatedSceneServer* server = new SimulatedSceneServer();
+
+        SimulatedScene* scene = new SimulatedScene();
         if( openScene )
           scene->loadSceneFromFile( fileToOpen );
+
+
+
+
+//        QObject::connect( server, SIGNAL( requestModel() ),
+//                          scene, SLOT( handleModelRequest() ) );
+//        QObject::connect( scene, SIGNAL( registerOnServer() ),
+//                          server, SLOT( registerClient() ) );
+//        QObject::connect( scene, SIGNAL( sendModel( int, std::string ) ),
+//                          server, SLOT( getModel( int, std::string ) ) );
+//        QObject::connect( server, SIGNAL( updateClientData( UpdateStruct ) ),
+//                          scene, SLOT( handleDataUpdate( UpdateStruct ) ) );
+//        QObject::connect( scene, SIGNAL( enableEngines( int, bool ) ),
+//                          server, SLOT( enableEngines( int, bool ) ) );
+
+        scene->connectToServer( server->getServerAddres(), server->getServerPort() );
+
+//        scene->doRegister();
+//        server->doRequestModels();
+
+        startScenePtr.reset( scene );
+
+        MainWindow w;
+
+        QGLFormat glFormat;
+        glFormat.setProfile( QGLFormat::CoreProfile );
+        glFormat.setSampleBuffers( true );
+
+        GLRenderWidget* renderWidget = new GLRenderWidget( glFormat, startScenePtr, &w );
+        startScenePtr->setWidget( renderWidget );
+        w.setRenderWidget( renderWidget );
+
+        w.show();
+
+
+        return a.exec();
 
         return 0;
       }

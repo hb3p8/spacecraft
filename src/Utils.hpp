@@ -2,6 +2,8 @@
 #define UTILS_HPP
 
 #include <Eigen/Core>
+#include <Eigen/Eigen>
+
 #include <QString>
 #include <QGLShaderProgram>
 #include <QVector3D>
@@ -51,5 +53,16 @@ Eigen::Vector3d sideToNormal( int side );
 
 bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShaderPath,
                            const QString& fragmentShaderPath );
+
+struct UpdateStruct
+{
+  Eigen::Vector3d position;
+  Eigen::Vector3d velocity;
+
+  Eigen::AngleAxisd rotation;
+  Eigen::Vector3d angularVelocity;
+
+  Eigen::Vector3d massCenter;
+};
 
 #endif // UTILS_HPP

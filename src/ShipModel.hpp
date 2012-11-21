@@ -23,13 +23,14 @@ struct BlockData
 
 class ShipModel: public BaseSceneObject
 {
+
 public:
   typedef std::vector< BlockRef > BlockRefArray;
   typedef QMap< int, double > InertiaCash;
   typedef QMap< int, float > EngineFloatMap;
 
   ShipModel( size_t size = SHIP_MAX_SIZE_DEFAULT );
-  ShipModel( std::string fileName );
+  ShipModel( std::string fileName, bool noGraphics = false );
   ~ShipModel();
 
   inline BlockData& getBlock( int x, int y, int z ) { return *( m_blocks + x + m_size * y + m_size * m_size * z ); }
@@ -86,6 +87,8 @@ private:
   InertiaCash m_inertiaCash;
 
   EngineFloatMap m_enginePower;
+
+  bool m_noGraphics;
 
 
 };

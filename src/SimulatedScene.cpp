@@ -16,8 +16,13 @@
 #include <iostream>
 #include <fstream>
 
+#include <QtNetwork>
+
+#include "Messages/ClientMessageHandler.h"
+
 using namespace Eigen;
 using namespace std;
+//using namespace messages;
 
 
 SimulatedScene::SimulatedScene() :
@@ -28,6 +33,24 @@ SimulatedScene::SimulatedScene() :
 {
 
   m_camera = CameraPtr( new Camera() );
+
+  m_tcpSocket = new QTcpSocket(this);
+
+  connect( m_tcpSocket, SIGNAL( readyRead() ), this, SLOT( readMessage() ) );
+
+  //! хак(?) для проверки не пришло ли ещё что-то в сокет
+  QTimer* timer = new QTimer( this );
+  timer->start( 200 );
+  connect( timer, SIGNAL( timeout() ), this, SLOT( readMessage() ) );
+
+  m_handler = new mes::ClientHandler<mes::MessageTypes>( *this );
+
+}
+
+void SimulatedScene::connectToServer( QString addres, int port )
+{
+  m_tcpSocket->abort();
+  m_tcpSocket->connectToHost( addres, port );
 }
 
 bool SimulatedScene::addModelFromFile( QString modelFileName )
@@ -75,8 +98,52 @@ bool SimulatedScene::loadSceneFromFile( QString sceneFileName )
   return res;
 }
 
+void SimulatedScene::readMessage()
+{
+  QDataStream in( m_tcpSocket );
+  in.setVersion( QDataStream::Qt_4_0 );
+
+  static quint16 blockSize = 0;
+  if ( blockSize == 0 ) {
+      if ( m_tcpSocket->bytesAvailable() < (int)sizeof( quint16 ) )
+          return;
+
+      in >> blockSize;
+  }
+
+  if ( m_tcpSocket->bytesAvailable() < blockSize )
+      return;
+
+  m_dispatcher.dispatch( in, *m_handler );
+
+  blockSize = 0;
+}
+
+//void handle( mes::MessageWrapper<mes::MessageText, mes::MessageTypes> message )
+//{
+//  ::std::cout << "MessageText: " << message.text.toStdString() << ::std::endl;
+//}
+
+
+
+//void SimulatedScene::handleModelRequest()
+//{
+//  emit sendModel( m_ID, m_sceneObjectNames[ 0 ] );
+//}
+
+//void SimulatedScene::handleDataUpdate( UpdateStruct ustruct )
+//{
+////  std::cout << "update: " << ustruct.position << std::endl << std::flush;
+//  m_sceneObjects[ 0 ]->m_position = ustruct.position;
+//  m_sceneObjects[ 0 ]->m_velocity = ustruct.velocity;
+//  m_sceneObjects[ 0 ]->m_rotation = ustruct.rotation;
+//  m_sceneObjects[ 0 ]->m_angularVelocity = ustruct.angularVelocity;
+//  m_sceneObjects[ 0 ]->m_massCenter = ustruct.massCenter;
+//}
+
 SimulatedScene::~SimulatedScene()
 {
+  delete m_handler;
 }
 
 void SimulatedScene::initialize()
@@ -214,8 +281,8 @@ void SimulatedScene::process( int newTime )
 
   m_camera->translate( m_velocity * delta );
 
-  for( BaseSceneObjectPtr obj: m_sceneObjects )
-    obj->process( delta );
+//  for( BaseSceneObjectPtr obj: m_sceneObjects )
+//    obj->process( delta );
 }
 
 void SimulatedScene::applyInput()
@@ -276,21 +343,27 @@ void SimulatedScene::keyPressEvent( QKeyEvent *e )
 
   case Qt::Key_E:
     engineRunning = !engineRunning;
-    ShipModel& shipModel = *( dynamic_cast<ShipModel*>( m_sceneObjects[ 0 ].get() ) );
-    if( engineRunning )
-    {
-      for( BlockRef engine : shipModel.getEngines() )
-      {
-        int idx = engine.generalIndex( shipModel.modelSize(), shipModel.getBlock( engine ).orientation );
-        shipModel.enginePower().insert( idx, 1.0 );
-      }
 
-    } else
-    {
-      for( BlockRef engine : shipModel.getEngines() )
-        shipModel.enginePower().insert(
-              engine.generalIndex( shipModel.modelSize(), shipModel.getBlock( engine ).orientation ), 0.0 );
-    }
+    mes::MessageWrapper<mes::MessageEngines, mes::MessageTypes> msg;
+    msg.clientId = m_ID;
+    msg.enginesEnabled = engineRunning;
+    sendMessage( msg, m_tcpSocket );
+//    emit enableEngines( m_ID, engineRunning );
+//    ShipModel& shipModel = *( dynamic_cast<ShipModel*>( m_sceneObjects[ 0 ].get() ) );
+//    if( engineRunning )
+//    {
+//      for( BlockRef engine : shipModel.getEngines() )
+//      {
+//        int idx = engine.generalIndex( shipModel.modelSize(), shipModel.getBlock( engine ).orientation );
+//        shipModel.enginePower().insert( idx, 1.0 );
+//      }
+
+//    } else
+//    {
+//      for( BlockRef engine : shipModel.getEngines() )
+//        shipModel.enginePower().insert(
+//              engine.generalIndex( shipModel.modelSize(), shipModel.getBlock( engine ).orientation ), 0.0 );
+//    }
   break;
 
   }

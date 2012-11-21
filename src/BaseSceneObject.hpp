@@ -7,6 +7,9 @@
 
 class BaseSceneObject
 {
+  friend class SimulatedScene;
+  friend class SimulatedSceneServer;
+
 public:
   BaseSceneObject();
 
