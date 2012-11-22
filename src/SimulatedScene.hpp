@@ -56,15 +56,16 @@ public:
     virtual void mousePressEvent( QMouseEvent* e );
     virtual void wheelEvent( QWheelEvent* e );
 
-    bool addModelFromFile( QString modelFileName );
+    bool addModelFromFile( QString modelFileName, int modelId = -1 );
     bool loadSceneFromFile( QString sceneFileName );
 
     void connectToServer( QString addres, int port );
 
+    void handleDataUpdate( mes::MessageSnapshot* msg );
+
 
 public slots:
 //    void handleModelRequest();
-//    void handleDataUpdate( UpdateStruct ustruct );
     void readMessage();
 
 
@@ -98,6 +99,9 @@ private:
 
     std::vector<BaseSceneObjectPtr> m_sceneObjects;
     std::vector<std::string> m_sceneObjectNames;
+
+    ShipModel* m_playerShip;
+    QString m_playerShipName;
 
     int m_ID;
 

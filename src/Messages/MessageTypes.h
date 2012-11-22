@@ -6,11 +6,13 @@
 
 namespace messages
 {
-    typedef types::Cons<MessageA,
-            types::Cons<MessageText,
-            types::Cons<MessageModel,
-            types::Cons<MessageEngines
-            > > > >
+    typedef types::Cons<MessageSnapshot,
+            types::Cons<MessageEngines,
+            types::Cons<MessageAccept,
+            types::Cons<MessageInitModel,
+            types::Cons<MessageInitScene,
+            types::Cons<MessageAcceptInit
+            > > > > > >
 
             MessageTypes;
 }

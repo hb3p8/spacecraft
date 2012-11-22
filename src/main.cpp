@@ -17,6 +17,8 @@ int main(int argc, char *argv[])
 
     bool skipNext = false;
 
+    QString serverAddres( "127.0.0.1" );
+    qint32 serverPort = 34202;
     QString fileToOpen( "default.txt" );
     ScenePtr startScenePtr;
     bool useEditorScene = true;
@@ -55,6 +57,20 @@ int main(int argc, char *argv[])
         openScene = true;
       }
 
+      if( argument == "--addres" )
+      {
+        skipNext = true;
+        assert( i + 1 < QApplication::arguments().size() );
+        serverAddres = QApplication::arguments().at( i + 1 );
+      }
+
+      if( argument == "--port" )
+      {
+        skipNext = true;
+        assert( i + 1 < QApplication::arguments().size() );
+        serverPort = QApplication::arguments().at( i + 1 ).toInt();
+      }
+
       if( argument == "--export" )
       {
         skipNext = true;
@@ -71,28 +87,20 @@ int main(int argc, char *argv[])
       {
         SimulatedSceneServer* server = new SimulatedSceneServer();
 
-        SimulatedScene* scene = new SimulatedScene();
         if( openScene )
-          scene->loadSceneFromFile( fileToOpen );
+          server->loadSceneFromFile( fileToOpen );
 
+        return a.exec();
+      }
 
+      if( argument == "--client" )
+      {
+        SimulatedScene* scene = new SimulatedScene();
 
+        if( openScene ) return -1;
 
-//        QObject::connect( server, SIGNAL( requestModel() ),
-//                          scene, SLOT( handleModelRequest() ) );
-//        QObject::connect( scene, SIGNAL( registerOnServer() ),
-//                          server, SLOT( registerClient() ) );
-//        QObject::connect( scene, SIGNAL( sendModel( int, std::string ) ),
-//                          server, SLOT( getModel( int, std::string ) ) );
-//        QObject::connect( server, SIGNAL( updateClientData( UpdateStruct ) ),
-//                          scene, SLOT( handleDataUpdate( UpdateStruct ) ) );
-//        QObject::connect( scene, SIGNAL( enableEngines( int, bool ) ),
-//                          server, SLOT( enableEngines( int, bool ) ) );
-
-        scene->connectToServer( server->getServerAddres(), server->getServerPort() );
-
-//        scene->doRegister();
-//        server->doRequestModels();
+        scene->addModelFromFile( fileToOpen );
+        scene->connectToServer( serverAddres, serverPort );
 
         startScenePtr.reset( scene );
 
@@ -110,8 +118,35 @@ int main(int argc, char *argv[])
 
 
         return a.exec();
+      }
 
-        return 0;
+
+
+      if( argument == "--clientserv" )
+      {
+        SimulatedSceneServer* server = new SimulatedSceneServer();
+
+        SimulatedScene* scene = new SimulatedScene();
+        scene->addModelFromFile( fileToOpen );
+
+        scene->connectToServer( server->getServerAddres(), server->getServerPort() );
+
+        startScenePtr.reset( scene );
+
+        MainWindow w;
+
+        QGLFormat glFormat;
+        glFormat.setProfile( QGLFormat::CoreProfile );
+        glFormat.setSampleBuffers( true );
+
+        GLRenderWidget* renderWidget = new GLRenderWidget( glFormat, startScenePtr, &w );
+        startScenePtr->setWidget( renderWidget );
+        w.setRenderWidget( renderWidget );
+
+        w.show();
+
+
+        return a.exec();
       }
 
       if( argument == "--sim" )

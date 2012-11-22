@@ -25,6 +25,9 @@ public:
   Eigen::Vector3d& position() { return m_position; }
   Eigen::AngleAxisd& rotation() { return m_rotation; }
 
+  int getId() { return m_id; }
+  void setId( int id ) { m_id = id; }
+
 protected:  
   Eigen::Vector3d m_position;
   Eigen::Vector3d m_velocity;

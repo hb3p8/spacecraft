@@ -29,7 +29,8 @@ SimulatedScene::SimulatedScene() :
   Scene( NULL ),
   m_text( "LMMonoCaps10", 10, Qt::green ),
   m_lastTime( 0 ),
-  m_velocity( Vector3f::Zero() )
+  m_velocity( Vector3f::Zero() ),
+  m_playerShip( 0 )
 {
 
   m_camera = CameraPtr( new Camera() );
@@ -45,6 +46,9 @@ SimulatedScene::SimulatedScene() :
 
   m_handler = new mes::ClientHandler<mes::MessageTypes>( *this );
 
+  Eigen::AngleAxisd asd( 1.5, Eigen::Vector3d( 1, 1, 1 ) );
+  std::cout << asd.angle();
+
 }
 
 void SimulatedScene::connectToServer( QString addres, int port )
@@ -53,12 +57,19 @@ void SimulatedScene::connectToServer( QString addres, int port )
   m_tcpSocket->connectToHost( addres, port );
 }
 
-bool SimulatedScene::addModelFromFile( QString modelFileName )
+bool SimulatedScene::addModelFromFile( QString modelFileName, int modelId )
 {
   bool res = false;
   if( QFile::exists( modelFileName ) )
   {
-    m_sceneObjects.push_back( BaseSceneObjectPtr( new ShipModel( modelFileName.toStdString() ) ) );
+    ShipModel* newShip = new ShipModel( modelFileName.toStdString() );
+    if( !m_playerShip )
+    {
+      m_playerShip = newShip;
+      m_playerShipName = modelFileName;
+    }
+    if( modelId >= 0 ) newShip->setId( modelId );
+    m_sceneObjects.push_back( BaseSceneObjectPtr( newShip  ) );
     m_sceneObjectNames.push_back( modelFileName.toStdString() );
     res = true;
   }
@@ -119,27 +130,30 @@ void SimulatedScene::readMessage()
   blockSize = 0;
 }
 
-//void handle( mes::MessageWrapper<mes::MessageText, mes::MessageTypes> message )
-//{
-//  ::std::cout << "MessageText: " << message.text.toStdString() << ::std::endl;
-//}
-
-
-
-//void SimulatedScene::handleModelRequest()
-//{
-//  emit sendModel( m_ID, m_sceneObjectNames[ 0 ] );
-//}
-
-//void SimulatedScene::handleDataUpdate( UpdateStruct ustruct )
-//{
-////  std::cout << "update: " << ustruct.position << std::endl << std::flush;
-//  m_sceneObjects[ 0 ]->m_position = ustruct.position;
-//  m_sceneObjects[ 0 ]->m_velocity = ustruct.velocity;
-//  m_sceneObjects[ 0 ]->m_rotation = ustruct.rotation;
-//  m_sceneObjects[ 0 ]->m_angularVelocity = ustruct.angularVelocity;
-//  m_sceneObjects[ 0 ]->m_massCenter = ustruct.massCenter;
-//}
+void SimulatedScene::handleDataUpdate( mes::MessageSnapshot* msg )
+{
+  for( int i = 0; i < msg->objIDs.size(); i++ )
+  {
+    int id = msg->objIDs[ i ];
+    BaseSceneObjectPtr currObj;
+    for( BaseSceneObjectPtr obj: m_sceneObjects )
+    {
+      if( obj->m_id == id )
+      {
+        currObj = obj;
+        break;
+      }
+    }
+    if( currObj )
+    {
+      currObj->m_position = qtVectorToEigend( msg->positions[ i ] );
+      currObj->m_velocity = qtVectorToEigend( msg->velocities[ i ] );
+      currObj->m_rotation = Eigen::AngleAxisd( msg->rotAngles[ i ], qtVectorToEigend( msg->rotAxes[ i ] ) );
+      currObj->m_angularVelocity = qtVectorToEigend( msg->angularVelocities[ i ] );
+      currObj->m_massCenter = qtVectorToEigend( msg->massCenteres[ i ] );
+    }
+  }
+}
 
 SimulatedScene::~SimulatedScene()
 {

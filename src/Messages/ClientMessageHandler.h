@@ -1,6 +1,7 @@
 #pragma once
 #include "MessageTypes.h"
 
+#include <Eigen/Eigen>
 #include <iostream>
 #include <QDataStream>
 #include "../SimulatedScene.hpp"
@@ -14,34 +15,50 @@ namespace messages
   public:
     ClientHandler( SimulatedScene& scene ): m_scene( scene ) {}
 
-    void handle(MessageWrapper<MessageA, MessageTypes>)
+    void handle( MessageWrapper<MessageSnapshot, MessageTypes> msg )
     {
-      ::std::cout << "MessageA" << ::std::endl;
+      std::cout << "u" << std::flush;
+      m_scene.handleDataUpdate( &msg );
     }
-    void handle(MessageWrapper<MessageText, MessageTypes> message)
-    {
-      ::std::cout << "MessageText: " << message.text.toStdString()
-                    << " Id: " << message.clientId << ::std::endl;
 
+    void handle( MessageWrapper<MessageAccept, MessageTypes> message )
+    {
       m_scene.m_ID = message.clientId;
 
-      MessageWrapper<MessageModel, MessageTypes> resp;
+      MessageWrapper<MessageInitModel, MessageTypes> resp;
       resp.clientId = m_scene.m_ID;
-      resp.modelName = QString( m_scene.m_sceneObjectNames[ 0 ].c_str() );
+      resp.modelName = m_scene.m_playerShipName;
       sendMessage( resp, m_scene.m_tcpSocket );
     }
-    void handle(MessageWrapper<MessageEngines, MessageTypes>)
+
+    void handle( MessageWrapper<MessageInitModel, MessageTypes>)
     {
+      assert( false );
     }
 
-    void handle(MessageWrapper<MessageModel, MessageTypes>)
+    void handle( MessageWrapper<MessageAcceptInit, MessageTypes> message )
     {
+      m_scene.m_playerShip->setId( message.playerShipId );
+    }
+
+    void handle( MessageWrapper<MessageEngines, MessageTypes> )
+    {
+      assert( false );
+    }
+
+    void handle( MessageWrapper<MessageInitScene, MessageTypes> msg )
+    {
+      for( int i = 0; i < msg.modelIds.size(); i++ )
+      {
+        m_scene.addModelFromFile( msg.modelNames[ i ], msg.modelIds[ i ] );
+        m_scene.m_sceneObjects.back()->refreshModel();
+        m_scene.m_sceneObjects.back()->attachShader( m_scene.m_cubeShader );
+      }
     }
 
   private:
     SimulatedScene& m_scene;
   };
-
 
 
 
@@ -51,28 +68,34 @@ namespace messages
   public:
     ServerHandler( SimulatedSceneServer& server ): m_server( server ) {}
 
-    void handle(MessageWrapper<MessageA, MessageTypes>)
+    void handle( MessageWrapper<MessageSnapshot, MessageTypes> )
     {
-      ::std::cout << "Server MessageA" << ::std::endl;
-    }
-    void handle(MessageWrapper<MessageText, MessageTypes> message)
-    {
-      ::std::cout << "MessageText: " << message.text.toStdString()
-                    << " Id: " << message.clientId << ::std::endl;
-
+      assert( false );
     }
 
-    void handle(MessageWrapper<MessageModel, MessageTypes> message)
+    void handle( MessageWrapper<MessageAccept, MessageTypes> )
     {
-      std::string str = message.modelName.toStdString();
-      ::std::cout << "Server MessageModel: " << str << ::std::endl;
-      m_server.getModel( message.clientId, str );
+      assert( false );
     }
 
-    void handle(MessageWrapper<MessageEngines, MessageTypes> message)
+    void handle( MessageWrapper<MessageInitModel, MessageTypes> message )
     {
-      ::std::cout << "Server Engines: " << message.enginesEnabled << ::std::endl;
+      m_server.getModel( message.clientId, message.modelName.toStdString() );
+    }
+
+    void handle( MessageWrapper<MessageAcceptInit, MessageTypes> message )
+    {
+      assert( false );
+    }
+
+    void handle( MessageWrapper<MessageEngines, MessageTypes> message )
+    {
       m_server.enableEngines( message.clientId, message.enginesEnabled );
+    }
+
+    void handle( MessageWrapper<MessageInitScene, MessageTypes> )
+    {
+      assert( false );
     }
 
   private:

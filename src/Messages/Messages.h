@@ -1,6 +1,7 @@
 #pragma once
 #include <QDataStream>
 #include <QtNetwork>
+#include <QVector3D>
 
 namespace messages
 {
@@ -18,29 +19,43 @@ namespace messages
     connection->write(block);
   }
 
-  class MessageA
-  {
-  protected:
-    void serialize(QDataStream &) { }
-    void unserialize(QDataStream &) { }
-  };
-
-  class MessageModel
+  class MessageSnapshot
   {
   public:
-    QString modelName;
-    qint32 clientId;
+    QVector<QVector3D> positions;
+    QVector<QVector3D> velocities;
+
+    QVector<QVector3D> rotAxes;
+    QVector<qreal> rotAngles;
+    QVector<QVector3D> angularVelocities;
+
+    QVector<QVector3D> massCenteres;
+
+    QVector<qint32> objIDs;
+
 
   protected:
     void serialize( QDataStream & stream )
     {
-      stream << modelName;
-      stream << clientId;
+      stream << positions;
+      stream << velocities;
+      stream << rotAxes;
+      stream << rotAngles;
+      stream << angularVelocities;
+      stream << massCenteres;
+
+      stream << objIDs;
     }
     void unserialize( QDataStream & stream )
     {
-      stream >> modelName;
-      stream >> clientId;
+      stream >> positions;
+      stream >> velocities;
+      stream >> rotAxes;
+      stream >> rotAngles;
+      stream >> angularVelocities;
+      stream >> massCenteres;
+
+      stream >> objIDs;
     }
   };
 
@@ -63,25 +78,80 @@ namespace messages
     }
   };
 
-  class MessageText
+  // Подтверждаем соединение с сервера и высылаем ID клиенту
+  class MessageAccept
   {
   public:
-    QString text;
     qint32 clientId;
 
   protected:
     void serialize( QDataStream & stream )
     {
-      stream << text;
       stream << clientId;
     }
     void unserialize( QDataStream & stream )
     {
-      stream >> text;
       stream >> clientId;
     }
-};
+  };
 
+  // Посылаем с клиента данные для инициализации коробля игрока (пока шлём имя файла)
+  class MessageInitModel
+  {
+  public:
+    QString modelName;
+    qint32 clientId;
+
+  protected:
+    void serialize( QDataStream & stream )
+    {
+      stream << modelName;
+      stream << clientId;
+    }
+    void unserialize( QDataStream & stream )
+    {
+      stream >> modelName;
+      stream >> clientId;
+    }
+  };
+
+  // Подтверждаем с сервера инициализацию коробля игрока и возвращаем ID модели
+  class MessageAcceptInit
+  {
+  public:
+    qint32 playerShipId;
+
+  protected:
+    void serialize( QDataStream & stream )
+    {
+      stream << playerShipId;
+    }
+    void unserialize( QDataStream & stream )
+    {
+      stream >> playerShipId;
+    }
+  };
+
+  // Посылаем с сервера данные для инициализации остальных объектов сцены (другие игроки, декорации)
+  // пока тоже в виде имён файлов
+  class MessageInitScene
+  {
+  public:
+    QVector<QString> modelNames;
+    QVector<qint32> modelIds;
+
+  protected:
+    void serialize( QDataStream & stream )
+    {
+      stream << modelNames;
+      stream << modelIds;
+    }
+    void unserialize( QDataStream & stream )
+    {
+      stream >> modelNames;
+      stream >> modelIds;
+    }
+  };
 
 
 

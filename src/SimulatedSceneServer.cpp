@@ -39,13 +39,13 @@ SimulatedSceneServer::SimulatedSceneServer() :
 {
 
   m_timer = new QTimer( this );
-  m_timer->start( 10 );
+  m_timer->start( 100 );
   connect( m_timer, SIGNAL( timeout() ), this, SLOT( work() ) );
 
   m_workTime->start();
 
   m_tcpServer = new QTcpServer(this);
-  if (!m_tcpServer->listen()) {
+  if (!m_tcpServer->listen( QHostAddress::Any, 34202 )) {
       QMessageBox::critical(0, tr("Spacecraft Server"),
                             tr("Unable to start the server: %1.")
                             .arg(m_tcpServer->errorString()));
@@ -72,13 +72,14 @@ void SimulatedSceneServer::work()
 
 bool SimulatedSceneServer::addModelFromFile( QString modelFileName )
 {
-  bool res = false;
+  bool result = false;
   if( QFile::exists( modelFileName ) )
   {
-    m_sceneObjects.push_back( BaseSceneObjectPtr( new ShipModel( modelFileName.toStdString() ) ) );
-    res = true;
+    m_sceneObjects.push_back( BaseSceneObjectPtr( new ShipModel( modelFileName.toStdString(), true ) ) );
+    m_sceneObjectNames.push_back( modelFileName );
+    result = true;
   }
-  return res;
+  return result;
 }
 
 bool SimulatedSceneServer::loadSceneFromFile( QString sceneFileName )
@@ -106,6 +107,7 @@ bool SimulatedSceneServer::loadSceneFromFile( QString sceneFileName )
       if( addModelFromFile( QString( modelFileName.c_str() ) ) )
       {
         m_sceneObjects.back()->position() = Vector3d( x, y, z );
+        m_sceneObjects.back()->refreshModel();
       }
 
     }
@@ -128,24 +130,33 @@ void SimulatedSceneServer::process( int newTime )
 
   float delta = deltaTime / 100.f;
 
-  m_velocity *= 0.7;
+//  m_velocity *= 0.7;
 
 //  applyInput();
 
 //  m_camera->translate( m_velocity * delta );
 
-  for( BaseSceneObjectPtr obj: m_sceneObjects )
-    obj->process( delta );
+  mes::MessageWrapper<mes::MessageSnapshot, mes::MessageTypes> msg;
 
-//  UpdateStruct ustruct;
-//  ShipModel& clientShipModel = *m_clients.find( 1 ).value().model;
-//  ustruct.position = clientShipModel.m_position;
-//  ustruct.rotation = clientShipModel.m_rotation;
-//  ustruct.velocity = clientShipModel.m_velocity;
-//  ustruct.angularVelocity = clientShipModel.m_angularVelocity;
-//  ustruct.massCenter= clientShipModel.m_massCenter;
-//  if( newTime % 10 == 0 )
-//    emit updateClientData( ustruct );
+  for( BaseSceneObjectPtr obj: m_sceneObjects )
+  {
+    obj->process( delta );    
+
+    msg.objIDs.push_back( obj->m_id );
+    msg.positions.push_back( eigenVectorToQt( obj->m_position ) );
+    msg.rotAngles.push_back( obj->m_rotation.angle() );
+    msg.rotAxes.push_back( eigenVectorToQt( obj->m_rotation.axis() ) );
+    msg.velocities.push_back( eigenVectorToQt( obj->m_velocity ) );
+    msg.angularVelocities.push_back( eigenVectorToQt( obj->m_angularVelocity ) );
+    msg.massCenteres.push_back( eigenVectorToQt( obj->m_massCenter ) );
+  }
+
+  // отсылаем состояния всех объектов на клиенты
+  for( ClientData* client: m_clients )
+  {
+    mes::sendMessage( msg, client->connection );
+  }
+
 }
 
 QString SimulatedSceneServer::getServerAddres()
@@ -165,8 +176,7 @@ void SimulatedSceneServer::registerClient()
 
   std::cout << "Registered ID: " << id << std::endl << std::flush;
 
-  mes::MessageWrapper<mes::MessageText, mes::MessageTypes> msg;
-  msg.text = tr("sample message");
+  mes::MessageWrapper<mes::MessageAccept, mes::MessageTypes> msg;
   msg.clientId = id;
 
   QTcpSocket *clientConnection = m_tcpServer->nextPendingConnection();
@@ -179,10 +189,6 @@ void SimulatedSceneServer::registerClient()
            client, SLOT( newMessage() ) );
 
   mes::sendMessage( msg, clientConnection );
-
-//  mes::MessageWrapper<mes::MessageA, mes::MessageTypes> amsg;
-//  mes::sendMessage( amsg, clientConnection );
-
 }
 
 void SimulatedSceneServer::readMessage( QTcpSocket* connection )
@@ -247,17 +253,42 @@ void SimulatedSceneServer::getModel( int id, std::string modelName )
     data->modelName = modelName;
     std::cout << "Given model name: " << modelName << std::endl << std::flush;
 
+    mes::MessageWrapper<mes::MessageInitScene, mes::MessageTypes> sceneMsg;
+    for( size_t j = 0; j < m_sceneObjects.size(); j++ )
+    {
+      sceneMsg.modelNames.push_back( m_sceneObjectNames[ j ] );
+      sceneMsg.modelIds.push_back( m_sceneObjects[ j ]->m_id );
+    }
+
     data->model = 0;
     if( QFile::exists( QString( modelName.c_str() ) ) )
     {
       data->model = new ShipModel( modelName, true );
       data->model->refreshModel();
       m_sceneObjects.push_back( BaseSceneObjectPtr( data->model ) );
+      m_sceneObjectNames.push_back( QString( modelName.c_str() ) );
+
+      mes::MessageWrapper<mes::MessageAcceptInit, mes::MessageTypes> acceptMsg;
+      acceptMsg.playerShipId = m_sceneObjects.back()->m_id;
+      mes::sendMessage( acceptMsg, data->connection );
+
+      // Отсылаем новому клиенту всю уже загруженную сцену
+      mes::sendMessage( sceneMsg, data->connection );
+
+      mes::MessageWrapper<mes::MessageInitScene, mes::MessageTypes> newModelMsg;
+      newModelMsg.modelNames.push_back( m_sceneObjectNames.back() );
+      newModelMsg.modelIds.push_back( m_sceneObjects.back()->m_id );
+
+      // Отсылаем всем старым клиентам новую модель
+      for( ClientData* client: m_clients )
+      {
+        if( client == data ) continue;
+        mes::sendMessage( newModelMsg, client->connection );
+      }
+
     }
 
     assert( data->model != 0 );
 
   }
 }
-
-

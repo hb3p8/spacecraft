@@ -74,6 +74,8 @@ public slots:
 
     void readMessage( QTcpSocket* connection );
 
+    bool loadSceneFromFile( QString sceneFileName );
+
 signals:
 //    void requestModel();
 //    void updateClientData( UpdateStruct );
@@ -82,7 +84,6 @@ private:
     void process( int newTime );
 
     bool addModelFromFile( QString modelFileName );
-    bool loadSceneFromFile( QString sceneFileName );
 
     QTcpServer* m_tcpServer;
     mes::Dispatcher<mes::MessageTypes> m_dispatcher;
@@ -96,6 +97,7 @@ private:
     Intersection m_minIntersection;
 
     std::vector<BaseSceneObjectPtr> m_sceneObjects;
+    std::vector<QString> m_sceneObjectNames;
 
     ClientMap m_clients;
     //std::vector<Client> m_clients;
