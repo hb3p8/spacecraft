@@ -28,8 +28,9 @@ public:
   typedef QMap< int, double > InertiaCash;
   typedef QMap< int, float > EngineFloatMap;
 
-  ShipModel( size_t size = SHIP_MAX_SIZE_DEFAULT );
-  ShipModel( std::string fileName );
+  ShipModel( float* initial_WTR = 0, size_t size = SHIP_MAX_SIZE_DEFAULT ); // float* initial_WTR = 0 только для
+  ShipModel( std::string fileName, float* initial_WTR = 0 ); // тех случаев когда модель не попадает в симуляцию
+
   ~ShipModel();
 
   inline BlockData& getBlock( int x, int y, int z ) { return *( m_blocks + x + m_size * y + m_size * m_size * z ); }
@@ -86,6 +87,8 @@ private:
   InertiaCash m_inertiaCash;
 
   EngineFloatMap m_enginePower;
+
+  float& WORLD_TIME_RATIO; // Для ускорения времени
 
 
 };

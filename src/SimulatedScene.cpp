@@ -20,12 +20,13 @@ using namespace Eigen;
 using namespace std;
 
 
-SimulatedScene::SimulatedScene() :
+SimulatedScene::SimulatedScene(float initial_WTR) :
   Scene( NULL ),
   m_text( "LMMonoCaps10", 10, Qt::green ),
   m_lastTime( 0 ),
   m_velocity( Vector3f::Zero() )
 {
+  WORLD_TIME_RATIO = initial_WTR;
 
   m_camera = CameraPtr( new Camera() );
 }
@@ -35,7 +36,7 @@ bool SimulatedScene::addModelFromFile( QString modelFileName )
   bool res = false;
   if( QFile::exists( modelFileName ) )
   {
-    m_sceneObjects.push_back( BaseSceneObjectPtr( new ShipModel( modelFileName.toStdString() ) ) );
+    m_sceneObjects.push_back( BaseSceneObjectPtr( new ShipModel( modelFileName.toStdString(), &WORLD_TIME_RATIO ) ) );
     res = true;
   }
   return res;

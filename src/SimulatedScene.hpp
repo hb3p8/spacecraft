@@ -22,7 +22,7 @@ class SimulatedScene : public Scene
 {
     Q_OBJECT
 public:
-    SimulatedScene();
+    SimulatedScene(float initial_WTR = 10.0);
     ~SimulatedScene();
 
 public:
@@ -70,6 +70,8 @@ private:
     QMap<std::string, GLuint> m_textures;
 
     std::vector<BaseSceneObjectPtr> m_sceneObjects;
+
+    float WORLD_TIME_RATIO;
 
 };
 
