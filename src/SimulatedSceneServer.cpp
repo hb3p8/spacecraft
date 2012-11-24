@@ -35,7 +35,8 @@ SimulatedSceneServer::SimulatedSceneServer() :
   m_timer( new QTimer( this ) ),
   m_workTime( new QTime() ),
   m_lastTime( 0 ),
-  m_velocity( Vector3f::Zero() )
+  m_velocity( Vector3f::Zero() ),
+  m_worldTimeRatio( 1.0 / 100.f )
 {
 
   m_timer = new QTimer( this );
@@ -128,7 +129,7 @@ void SimulatedSceneServer::process( int newTime )
   int deltaTime = newTime - m_lastTime;
   m_lastTime = newTime;
 
-  float delta = deltaTime / 100.f;
+  float delta = deltaTime * m_worldTimeRatio;
 
 //  m_velocity *= 0.7;
 

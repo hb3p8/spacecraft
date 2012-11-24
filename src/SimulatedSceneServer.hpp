@@ -100,7 +100,7 @@ private:
     std::vector<QString> m_sceneObjectNames;
 
     ClientMap m_clients;
-    //std::vector<Client> m_clients;
+    qreal m_worldTimeRatio;
 
 
 
