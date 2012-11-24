@@ -17,9 +17,8 @@ int blockSpecs[ numBlockTypes ][ 6 ] =
 };
 
 
-ShipModel::ShipModel( float* initial_WTR, size_t size ):
-  m_size( size ),
-  WORLD_TIME_RATIO( *initial_WTR )
+
+ShipModel::ShipModel( size_t size ): BaseSceneObject(), m_size( size )
 {
   int center = m_size / 2;
   m_center = Vector3i( center, center, center );
@@ -37,13 +36,12 @@ ShipModel::ShipModel( float* initial_WTR, size_t size ):
       }
 }
 
-ShipModel::ShipModel( std::string fileName,  float* initial_WTR ):
+ShipModel::ShipModel( std::string fileName, bool noGraphics ):
+  BaseSceneObject(),
   m_blocks( NULL ),
-  WORLD_TIME_RATIO( *initial_WTR )
+  m_noGraphics( noGraphics )
 {
   loadFromFile( fileName, true );
-
-  WORLD_TIME_RATIO = *initial_WTR;
 }
 
 ShipModel::~ShipModel()
@@ -213,7 +211,8 @@ void ShipModel::refreshModel()
 {
   m_octree.build( this );
 
-  buildMesh();
+  if( !m_noGraphics )
+    buildMesh();
 
   calculateMassCenter();
   findEngines();
@@ -228,6 +227,7 @@ bool ShipModel::octreeRaycastIntersect( Vector3f rayStart, Vector3f rayDir, Inte
   return intersection.side != SIDE_NO_INTERSECTION;
 }
 
+// TODO: может перенести это куда-нибудь ближе к октри
 Intersection ShipModel::traverse( Vector3f rayStart, Vector3f rayDir, OctreeNode& node )
 {
   float newTime;
@@ -464,6 +464,7 @@ void ShipModel::findEngines()
 
 void ShipModel::process( float deltaTime )
 {
+  // на дельтатайм умножаем на ворлдстеп до входа в эту функцию, на то он и ворлд)
 
   for( BlockRef engineBlockRef : getEngines() )
   {
@@ -487,11 +488,11 @@ void ShipModel::process( float deltaTime )
 
     // изменение угловой скорости считаем в локальном пространстве модели
     m_angularVelocity += (-1) * angularVelDelta * engineForce /
-        getInertia( angularVelDelta, engineBlockRef, side ) * (deltaTime * WORLD_TIME_RATIO);
+        getInertia( angularVelDelta, engineBlockRef, side ) * deltaTime;
 
     // изменение скорости - в мировом пространстве (с учётом shipRotation)
     engineDir = m_rotation * engineDir;
-    m_velocity += engineDir * engineForce / m_mass * (deltaTime * WORLD_TIME_RATIO);
+    m_velocity += engineDir * engineForce / m_mass * deltaTime;
   }
 
   m_position += m_velocity * deltaTime;

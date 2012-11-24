@@ -61,6 +61,9 @@ macro( find_prerequests NAME OPTIONS ${ARGC} )
         if( ${LIBRARY} STREQUAL "QtOpenGL" )
           set( QT_USE_QTOPENGL TRUE )
         endif()
+        if( ${LIBRARY} STREQUAL "QtNetwork" )
+          set( QT_USE_QTNETWORK TRUE )
+        endif()
       endforeach( LIBRARY )
 
       include( ${QT_USE_FILE} )
@@ -111,6 +114,9 @@ macro( make_qt_sources )
   
 endmacro()
 
+macro( build_tests )
+
+endmacro()
 
 macro( make_qt_project )
   make_qt_sources()

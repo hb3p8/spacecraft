@@ -11,7 +11,7 @@ set( PROJECT_PATH ${CMAKE_CURRENT_SOURCE_DIR} )
 set( SOURCE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( BINARY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin )
 
-#enable_testing()
+enable_testing()
 #create_directory( tests )
 
 add_subdirectory( src Game )

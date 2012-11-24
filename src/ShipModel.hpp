@@ -23,13 +23,14 @@ struct BlockData
 
 class ShipModel: public BaseSceneObject
 {
+
 public:
   typedef std::vector< BlockRef > BlockRefArray;
   typedef QMap< int, double > InertiaCash;
   typedef QMap< int, float > EngineFloatMap;
 
-  ShipModel( float* initial_WTR = 0, size_t size = SHIP_MAX_SIZE_DEFAULT ); // float* initial_WTR = 0 только для
-  ShipModel( std::string fileName, float* initial_WTR = 0 ); // тех случаев когда модель не попадает в симуляцию
+  ShipModel( size_t size = SHIP_MAX_SIZE_DEFAULT );
+  ShipModel( std::string fileName, bool noGraphics = false );
 
   ~ShipModel();
 
@@ -88,7 +89,8 @@ private:
 
   EngineFloatMap m_enginePower;
 
-  float& WORLD_TIME_RATIO; // Для ускорения времени
+  bool m_noGraphics;
+
 
 
 };

@@ -15,17 +15,33 @@
 #include "ShipModel.hpp"
 #include "Mesh.hpp"
 
+//#include "Messages/ClientMessageHandler.h"
+#include "Messages/MessageTypes.h"
+#include "Messages/Dispatcher.h"
+
+namespace mes = messages;
+
+QT_BEGIN_NAMESPACE
+  class QTcpSocket;
+QT_END_NAMESPACE
 
 class GLRenderWidget;
+namespace messages
+{
+  template <typename MessageTypes>
+  class ClientHandler;
+}
 
 class SimulatedScene : public Scene
 {
     Q_OBJECT
+
+  friend class mes::ClientHandler<mes::MessageTypes>;
+
 public:
     SimulatedScene(float initial_WTR = 10.0);
     ~SimulatedScene();
 
-public:
     virtual void initialize();
     virtual void draw();
 
@@ -40,8 +56,18 @@ public:
     virtual void mousePressEvent( QMouseEvent* e );
     virtual void wheelEvent( QWheelEvent* e );
 
-    bool addModelFromFile( QString modelFileName );
+    bool addModelFromFile( QString modelFileName, int modelId = -1 );
     bool loadSceneFromFile( QString sceneFileName );
+
+    void connectToServer( QString addres, int port );
+
+    void handleDataUpdate( mes::MessageSnapshot* msg );
+
+
+public slots:
+//    void handleModelRequest();
+    void readMessage();
+
 
 private slots:
     void applyInput();
@@ -50,15 +76,17 @@ private slots:
 private:
     void buildStarMesh();
 
+    QTcpSocket* m_tcpSocket;
+    mes::Dispatcher<mes::MessageTypes> m_dispatcher;
+    mes::ClientHandler<mes::MessageTypes>* m_handler;
+
     QGLShaderProgram m_cubeShader;
     QGLShaderProgram m_starShader;
 
     QPoint m_lastMousePos;
     TextRender m_text;
 
-    CameraPtr m_camera; //камеру и всё что можно наверно надо перенести в Scene
-
-//    ShipModel& m_shipModel;
+    CameraPtr m_camera;
 
     Mesh m_starMesh;
 
@@ -70,6 +98,12 @@ private:
     QMap<std::string, GLuint> m_textures;
 
     std::vector<BaseSceneObjectPtr> m_sceneObjects;
+    std::vector<std::string> m_sceneObjectNames;
+
+    ShipModel* m_playerShip;
+    QString m_playerShipName;
+
+    int m_ID;
 
     float WORLD_TIME_RATIO;
 

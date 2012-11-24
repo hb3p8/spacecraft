@@ -12,3 +12,7 @@ macro( copy_binary name )
   copy_file( ${name} ${BINARY_PATH}/ )
 endmacro()
 
+macro( copy_test name )
+  copy_file( ${name} ${BINARY_PATH}/tests/ )
+endmacro()
+
