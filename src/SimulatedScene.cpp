@@ -171,6 +171,10 @@ void SimulatedScene::initialize()
 {
     assert( m_widget );
 
+    fx::Lines* lineEffect = new fx::Lines();
+    lineEffect->initialize( m_widget );
+    m_fxmanager.registerEffect( "line", fx::EffectTypePtr( lineEffect ) );
+
     if ( !prepareShaderProgram( m_cubeShader,
                                 QString( SPACECRAFT_PATH ) + "/shaders/blockMaterial.vert",
                                 QString( SPACECRAFT_PATH ) + "/shaders/blockMaterial.frag" ) )
@@ -299,29 +303,30 @@ void SimulatedScene::draw()
     obj->draw();
   }
 
-  glBlendFunc(GL_ONE, GL_ONE); // additive blending
-
   glBindTexture( GL_TEXTURE_2D, 0 );
 
   m_cubeShader.release();
 
+  m_fxmanager.drawEffects( viewMatrix, projectionMatrix );
 
-  glDepthMask(GL_FALSE);
+//  glBlendFunc(GL_ONE, GL_ONE); // additive blending
 
-  glBindTexture( GL_TEXTURE_2D, m_textures.find( "line_gradient" ).value() );
+//  glDepthMask(GL_FALSE);
 
-  m_tmpShader.bind();
+//  glBindTexture( GL_TEXTURE_2D, m_textures.find( "line_gradient" ).value() );
 
-  m_tmpShader.setUniformValue( "projectionMatrix", projectionMatrix );
-  m_tmpShader.setUniformValue( "viewMatrix", viewMatrix );
-  m_tmpShader.setUniformValue( "radius", (float) 1.5 );
-  m_tmpShader.setUniformValue( "gradientTexture", 0 );
+//  m_tmpShader.bind();
 
-  m_tmpMesh.drawSimple();
+//  m_tmpShader.setUniformValue( "projectionMatrix", projectionMatrix );
+//  m_tmpShader.setUniformValue( "viewMatrix", viewMatrix );
+//  m_tmpShader.setUniformValue( "radius", (float) 1.5 );
+//  m_tmpShader.setUniformValue( "gradientTexture", 0 );
 
-  m_tmpShader.release();
+//  m_tmpMesh.drawSimple();
 
-  glBindTexture( GL_TEXTURE_2D, 0 );
+//  m_tmpShader.release();
+
+//  glBindTexture( GL_TEXTURE_2D, 0 );
 
 
 

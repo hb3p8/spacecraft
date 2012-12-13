@@ -19,6 +19,9 @@
 #include "Messages/MessageTypes.h"
 #include "Messages/Dispatcher.h"
 
+#include "FxManager.hpp"
+
+namespace fx = spacefx;
 namespace mes = messages;
 
 QT_BEGIN_NAMESPACE
@@ -107,6 +110,8 @@ private:
 
     Mesh m_tmpMesh;
     QGLShaderProgram m_tmpShader;
+
+    fx::Manager m_fxmanager;
 
 };
 
