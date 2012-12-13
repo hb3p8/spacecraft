@@ -29,6 +29,8 @@ public:
     // draw mesh without index buffer
     void drawSimple();
 
+    void setMode( int mode );
+
 
 private:
     typedef QMap< QGLBuffer*, bool >  AllocationMap;
@@ -45,6 +47,8 @@ private:
     AllocationMap m_bufferAllocationMap;
     size_t m_indicesCount;
     size_t m_verticesCount;
+
+    int m_mode;
 };
 
 #endif // MESH_H

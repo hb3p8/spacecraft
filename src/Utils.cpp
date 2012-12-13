@@ -160,3 +160,28 @@ bool prepareShaderProgram( QGLShaderProgram& program,
 
     return result;
 }
+
+bool prepareShaderProgram( QGLShaderProgram& program,
+                           const QString& vertexShaderPath,
+                           const QString& fragmentShaderPath,
+                           const QString& geometryShaderPath )
+{
+    bool result = program.addShaderFromSourceFile( QGLShader::Vertex, vertexShaderPath );
+    if ( !result )
+        qWarning() << program.log();
+
+    result = program.addShaderFromSourceFile( QGLShader::Fragment, fragmentShaderPath );
+    if ( !result )
+        qWarning() << program.log();
+
+    result = program.addShaderFromSourceFile( QGLShader::Geometry, geometryShaderPath );
+    if ( !result )
+        qWarning() << program.log();
+
+    result = program.link();
+    if ( !result )
+        qWarning() << "Could not link shader program:" << program.log();
+
+    return result;
+}
+

@@ -39,7 +39,7 @@ class SimulatedScene : public Scene
   friend class mes::ClientHandler<mes::MessageTypes>;
 
 public:
-    SimulatedScene(float initial_WTR = 10.0);
+    SimulatedScene();
     ~SimulatedScene();
 
     virtual void initialize();
@@ -105,7 +105,8 @@ private:
 
     int m_ID;
 
-    float WORLD_TIME_RATIO;
+    Mesh m_tmpMesh;
+    QGLShaderProgram m_tmpShader;
 
 };
 

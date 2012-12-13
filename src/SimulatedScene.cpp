@@ -25,15 +25,13 @@ using namespace std;
 //using namespace messages;
 
 
-SimulatedScene::SimulatedScene(float initial_WTR) :
+SimulatedScene::SimulatedScene() :
   Scene( NULL ),
   m_text( "LMMonoCaps10", 10, Qt::green ),
   m_lastTime( 0 ),
   m_velocity( Vector3f::Zero() ),
   m_playerShip( 0 )
 {
-  WORLD_TIME_RATIO = initial_WTR;
-
   m_camera = CameraPtr( new Camera() );
 
   m_tcpSocket = new QTcpSocket(this);
@@ -162,6 +160,13 @@ SimulatedScene::~SimulatedScene()
   delete m_handler;
 }
 
+static const uint32_t verticesCount = 8;
+
+const float linePositions[verticesCount][3] = {
+        {-10.0, 10.0, 10.0}, { 10.0, 10.0, 10.0}, { 10.0,-10.0, 10.0}, {-10.0,10.0, -10.0},
+        { 10.0, 10.0,-10.0}, {-10.0, 10.0,-10.0}, {-10.0,-10.0,-10.0}, { 10.0,-10.0,-10.0}
+};
+
 void SimulatedScene::initialize()
 {
     assert( m_widget );
@@ -176,12 +181,17 @@ void SimulatedScene::initialize()
                                 QString( SPACECRAFT_PATH ) + "/shaders/stars.frag" ) )
       return;
 
+    QImage lineImage( QString( SPACECRAFT_PATH ) + "/images/grad3.bmp" );
+    m_textures.insert( "line_gradient", m_widget->bindTexture( lineImage ) );
+
     QImage starsImage( QString( SPACECRAFT_PATH ) + "/images/stars.jpg" );
     starsImage.setAlphaChannel( QImage( QString( SPACECRAFT_PATH ) + "/images/starsAlpha.jpg" ) );
     m_textures.insert( "stars", m_widget->bindTexture( starsImage ) );
 
     QImage blocksImage( QString( SPACECRAFT_PATH ) + "/images/block_faces.png" );
     m_textures.insert( "block_faces", m_widget->bindTexture( blocksImage ) );
+
+
 
 
     if ( !m_cubeShader.bind() )
@@ -205,6 +215,22 @@ void SimulatedScene::initialize()
 
     m_camera->setPosition( Eigen::Vector3f( 0.0, 0.0, 0.0 ) );
 
+//    if ( !prepareShaderProgram( m_tmpShader,
+//                                QString( SPACECRAFT_PATH ) + "/shaders/simpleLine.vert",
+//                                QString( SPACECRAFT_PATH ) + "/shaders/simpleLine.frag" ) )
+//      return;
+
+    if ( !prepareShaderProgram( m_tmpShader,
+                                QString( SPACECRAFT_PATH ) + "/shaders/geometryLine.vert",
+                                QString( SPACECRAFT_PATH ) + "/shaders/geometryLine.frag",
+                                QString( SPACECRAFT_PATH ) + "/shaders/geometryLine.geom" ) )
+      return;
+
+
+    m_tmpMesh.writePositions( linePositions, verticesCount );
+    m_tmpMesh.attachShader( m_tmpShader );
+    m_tmpMesh.setMode( GL_LINES );
+
 }
 
 bool engineRunning = false;
@@ -214,7 +240,10 @@ void SimulatedScene::draw()
 
 //  m_shipModel.octreeRaycastIntersect( m_camera->position(), m_camera->view(), m_minIntersection );
 
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+  glDepthMask(GL_TRUE);
+  glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); // normal blending
 
   QMatrix4x4 modelMatrix;
   //QMatrix4x4 projectionMatrix( m_camera->projectionMatrix() );
@@ -231,6 +260,7 @@ void SimulatedScene::draw()
   glBindTexture( GL_TEXTURE_2D, m_textures.find( "stars" ).value() );
 
   glDisable( GL_DEPTH_TEST );
+  glDisable( GL_CULL_FACE );
 
   m_starShader.setUniformValue( "projectionMatrix", projectionMatrix );
   m_starShader.setUniformValue( "viewMatrix", viewStarMatrix );
@@ -239,7 +269,11 @@ void SimulatedScene::draw()
   m_starMesh.drawSimple();
   m_starShader.release();
 
+  glEnable( GL_CULL_FACE );
   glEnable( GL_DEPTH_TEST );
+
+//  glCullFace(GL_FRONT);
+
 
   m_cubeShader.bind();
 
@@ -253,6 +287,7 @@ void SimulatedScene::draw()
     modelMatrix.rotate( obj->rotation().angle() / M_PI * 180.,
                         eigenVectorToQt( obj->rotation().axis() ) );
 
+    // !
     modelMatrix.translate( eigenVectorToQt( (Vector3d)(obj->getMassCenter() * (-1)) ) );//по-моему если от объекта чёт отвалится и центр масс сместится тут будет косяк (объект "внезапно" переместится с учётам нового цнтра масс)
 
     m_cubeShader.setUniformValue( "projectionMatrix", projectionMatrix );
@@ -264,9 +299,31 @@ void SimulatedScene::draw()
     obj->draw();
   }
 
+  glBlendFunc(GL_ONE, GL_ONE); // additive blending
+
   glBindTexture( GL_TEXTURE_2D, 0 );
 
   m_cubeShader.release();
+
+
+  glDepthMask(GL_FALSE);
+
+  glBindTexture( GL_TEXTURE_2D, m_textures.find( "line_gradient" ).value() );
+
+  m_tmpShader.bind();
+
+  m_tmpShader.setUniformValue( "projectionMatrix", projectionMatrix );
+  m_tmpShader.setUniformValue( "viewMatrix", viewMatrix );
+  m_tmpShader.setUniformValue( "radius", (float) 1.5 );
+  m_tmpShader.setUniformValue( "gradientTexture", 0 );
+
+  m_tmpMesh.drawSimple();
+
+  m_tmpShader.release();
+
+  glBindTexture( GL_TEXTURE_2D, 0 );
+
+
 
   m_text.add( "fps\t", dynamic_cast< GLRenderWidget* >( m_widget )->getFPS() );
   m_text.add( "camera\t", m_camera->position() );

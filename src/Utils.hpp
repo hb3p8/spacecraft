@@ -55,6 +55,9 @@ Eigen::Vector3d sideToNormal( int side );
 bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShaderPath,
                            const QString& fragmentShaderPath );
 
+bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShaderPath,
+                           const QString& fragmentShaderPath, const QString& geometryShaderPath );
+
 struct UpdateStruct
 {
   Eigen::Vector3d position;

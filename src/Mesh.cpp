@@ -5,8 +5,14 @@ Mesh::Mesh():
   m_normalBuffer( QGLBuffer::VertexBuffer ),
   m_texcoordBuffer( QGLBuffer::VertexBuffer ),
   m_indexBuffer( QGLBuffer::IndexBuffer ),
-  m_colorBuffer( QGLBuffer::VertexBuffer )
+  m_colorBuffer( QGLBuffer::VertexBuffer ),
+  m_mode( GL_TRIANGLES )
 {
+}
+
+void Mesh::setMode( int mode )
+{
+   this->m_mode = mode;
 }
 
 void Mesh::attachShader( QGLShaderProgram& shader )
@@ -73,7 +79,7 @@ void Mesh::drawIndexed()
 
   m_indexBuffer.bind();
 
-  glDrawElements( GL_TRIANGLES, m_indicesCount, GL_UNSIGNED_INT, NULL );
+  glDrawElements( m_mode, m_indicesCount, GL_UNSIGNED_INT, NULL );
 
   m_shaderProgram->disableAttributeArray( "position" );
   m_shaderProgram->disableAttributeArray( "normal" );
@@ -129,7 +135,7 @@ void Mesh::drawSimple()
     m_shaderProgram->enableAttributeArray( "color" );
   }
 
-  glDrawArrays( GL_TRIANGLES, 0, m_verticesCount );
+  glDrawArrays( m_mode, 0, m_verticesCount );
 
   m_shaderProgram->disableAttributeArray( "position" );
   m_shaderProgram->disableAttributeArray( "normal" );
