@@ -61,6 +61,8 @@ void main()
 	vec4 viewPos001 = vec4( v1 -d2+d3 -lineDirOffsetM, 1.0);
 	vec4 viewPos010 = vec4( v1 +d2-d3 -lineDirOffsetM, 1.0);
 	vec4 viewPos011 = vec4( v1 +d2+d3 -lineDirOffsetM, 1.0);
+	// d2*=0.2;
+	// d3*=0.2;
 	vec4 viewPos110 = vec4( v1 +d2-d3 +lineDirOffsetP, 1.0);
 	vec4 viewPos111 = vec4( v1 +d2+d3 +lineDirOffsetP, 1.0);
 	vec4 viewPos100 = vec4( v1 -d2-d3 +lineDirOffsetP, 1.0);

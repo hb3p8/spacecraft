@@ -18,7 +18,6 @@ namespace spacefx
   class EffectType
   {
   public:
-//    void add( Eigen::Matrix4f transform, void* userdata );
     virtual void draw( QMatrix4x4& viewMatrix, QMatrix4x4& projectionMatrix ) = 0;
 
   };
@@ -26,16 +25,27 @@ namespace spacefx
   class Lines : public EffectType
   {
   public:
+    Lines(): m_vertexBuffer( QGLBuffer::VertexBuffer ),
+      m_verticesCount( 0 ),
+//      m_maxVerticesCount( 512 ),
+      m_data( 64 )
+    {}
+
     void initialize( QGLWidget* widget );
 
     void draw( QMatrix4x4& viewMatrix, QMatrix4x4& projectionMatrix );
 
     void addLine( Eigen::Vector3f p1, Eigen::Vector3f p2 );
+    void addLine( Eigen::Vector3d p1, Eigen::Vector3d p2 );
 
   private:
-    Mesh m_mesh;
+
     QGLShaderProgram m_shader;
     GLuint m_texture;
+    QGLBuffer m_vertexBuffer;
+    size_t m_verticesCount;
+//    size_t m_maxVerticesCount;
+    std::vector<Eigen::Vector3f> m_data;
 
   };
 

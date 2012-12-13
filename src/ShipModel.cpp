@@ -397,6 +397,34 @@ void ShipModel::optimize()
 
 }
 
+void ShipModel::draw( spacefx::Manager& fxmanager )
+{
+  m_mesh.drawIndexed();
+
+  spacefx::Lines* linesEffect = dynamic_cast< spacefx::Lines* >( fxmanager.getEffect( "line" ).get() );
+
+  if( linesEffect )
+    for( BlockRef engineBlockRef : getEngines() )
+    {
+      EngineFloatMap::const_iterator i;
+      int idx = engineBlockRef.generalIndex( m_size, getBlock( engineBlockRef ).orientation );
+      i = m_enginePower.find( idx );
+      if( i == m_enginePower.end() || i.value() < 1e-6 )
+        continue;
+
+      int side = 0;
+      side = rotateSide( side, getBlock( engineBlockRef ).orientation );
+
+      Vector3d engineDir = (-1) * sideToNormald( side );
+
+      Vector3d enginePos( engineBlockRef.position_double( 2. ) );
+//      Vector3f enginePos( engineBlockRef.position( 2. ) );
+
+      linesEffect->addLine( (Vector3d)( m_rotation * ( enginePos - engineDir - m_massCenter ) + m_position ),
+                            (Vector3d)( m_rotation * ( enginePos - engineDir*2 - m_massCenter) + m_position ) );
+    }
+}
+
 Eigen::Vector3d ShipModel::calculateMassCenter()
 {
   double massSum = 0.0;
@@ -479,7 +507,7 @@ void ShipModel::process( float deltaTime )
     int side = 0;
     side = rotateSide( side, getBlock( engineBlockRef ).orientation );
 
-    Vector3d engineDir = (-1) * sideToNormal( side );
+    Vector3d engineDir = (-1) * sideToNormald( side );
 
     float engineForce = 0.1 * power;
 

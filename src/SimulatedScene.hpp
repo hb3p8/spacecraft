@@ -68,7 +68,6 @@ public:
 
 
 public slots:
-//    void handleModelRequest();
     void readMessage();
 
 
@@ -107,9 +106,6 @@ private:
     QString m_playerShipName;
 
     int m_ID;
-
-    Mesh m_tmpMesh;
-    QGLShaderProgram m_tmpShader;
 
     fx::Manager m_fxmanager;
 

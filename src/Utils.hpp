@@ -41,6 +41,8 @@ inline QVector3D eigenVectorToQt( Eigen::Vector3d v ) { return QVector3D( v.x(),
 inline Eigen::Vector3f qtVectorToEigen( QVector3D v ) { return Eigen::Vector3f( v.x(), v.y(), v.z() ); }
 inline Eigen::Vector3d qtVectorToEigend( QVector3D v ) { return Eigen::Vector3d( v.x(), v.y(), v.z() ); }
 
+inline Eigen::Vector3f doubleVectorToFloat( Eigen::Vector3d v ) { return Eigen::Vector3f( v.x(), v.y(), v.z() ); }
+
 bool rayBoxIntersection( Eigen::Vector3f rayStart, Eigen::Vector3f rayDir, Eigen::Vector3f boxMin,
                          Eigen::Vector3f boxMax, float* time, size_t* side );
 
@@ -49,7 +51,8 @@ int directionXZSideTest( Eigen::Vector3f rayDir );
 
 int rotateSide( int side, int orient );
 
-Eigen::Vector3d sideToNormal( int side );
+Eigen::Vector3d sideToNormald( int side );
+Eigen::Vector3f sideToNormalf( int side );
 
 
 bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShaderPath,

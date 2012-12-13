@@ -4,6 +4,7 @@
 #include <Eigen/Eigen>
 #include <memory>
 #include <QGLShaderProgram>
+#include "FxManager.hpp"
 
 class BaseSceneObject
 {
@@ -16,7 +17,7 @@ public:
   virtual ~BaseSceneObject(){}
 
   virtual void process( float deltaTime ) {}
-  virtual void draw() = 0;
+  virtual void draw( spacefx::Manager& fxmanager ) = 0;
   virtual void attachShader( QGLShaderProgram& shader ) {}
   virtual void refreshModel() {}
 

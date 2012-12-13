@@ -100,7 +100,7 @@ void Mesh::drawSimple()
   if( isAllocated( m_indexBuffer ) && indexWarning )
   {
     indexWarning = false;
-    qWarning() << "Indicecs allocated, so you must probably call indexedDraw() instead of draw()";
+    qWarning() << "Indices allocated, so you probably have to call drawIndexed() instead of drawSimple()";
   }
 
   m_vertexBuffer.bind();

@@ -160,13 +160,6 @@ SimulatedScene::~SimulatedScene()
   delete m_handler;
 }
 
-static const uint32_t verticesCount = 8;
-
-const float linePositions[verticesCount][3] = {
-        {-10.0, 10.0, 10.0}, { 10.0, 10.0, 10.0}, { 10.0,-10.0, 10.0}, {-10.0,10.0, -10.0},
-        { 10.0, 10.0,-10.0}, {-10.0, 10.0,-10.0}, {-10.0,-10.0,-10.0}, { 10.0,-10.0,-10.0}
-};
-
 void SimulatedScene::initialize()
 {
     assert( m_widget );
@@ -185,8 +178,6 @@ void SimulatedScene::initialize()
                                 QString( SPACECRAFT_PATH ) + "/shaders/stars.frag" ) )
       return;
 
-    QImage lineImage( QString( SPACECRAFT_PATH ) + "/images/grad3.bmp" );
-    m_textures.insert( "line_gradient", m_widget->bindTexture( lineImage ) );
 
     QImage starsImage( QString( SPACECRAFT_PATH ) + "/images/stars.jpg" );
     starsImage.setAlphaChannel( QImage( QString( SPACECRAFT_PATH ) + "/images/starsAlpha.jpg" ) );
@@ -194,8 +185,6 @@ void SimulatedScene::initialize()
 
     QImage blocksImage( QString( SPACECRAFT_PATH ) + "/images/block_faces.png" );
     m_textures.insert( "block_faces", m_widget->bindTexture( blocksImage ) );
-
-
 
 
     if ( !m_cubeShader.bind() )
@@ -219,22 +208,6 @@ void SimulatedScene::initialize()
 
     m_camera->setPosition( Eigen::Vector3f( 0.0, 0.0, 0.0 ) );
 
-//    if ( !prepareShaderProgram( m_tmpShader,
-//                                QString( SPACECRAFT_PATH ) + "/shaders/simpleLine.vert",
-//                                QString( SPACECRAFT_PATH ) + "/shaders/simpleLine.frag" ) )
-//      return;
-
-    if ( !prepareShaderProgram( m_tmpShader,
-                                QString( SPACECRAFT_PATH ) + "/shaders/geometryLine.vert",
-                                QString( SPACECRAFT_PATH ) + "/shaders/geometryLine.frag",
-                                QString( SPACECRAFT_PATH ) + "/shaders/geometryLine.geom" ) )
-      return;
-
-
-    m_tmpMesh.writePositions( linePositions, verticesCount );
-    m_tmpMesh.attachShader( m_tmpShader );
-    m_tmpMesh.setMode( GL_LINES );
-
 }
 
 bool engineRunning = false;
@@ -244,7 +217,7 @@ void SimulatedScene::draw()
 
 //  m_shipModel.octreeRaycastIntersect( m_camera->position(), m_camera->view(), m_minIntersection );
 
-  glDepthMask(GL_TRUE);
+//  glDepthMask(GL_TRUE);
   glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); // normal blending
@@ -300,33 +273,17 @@ void SimulatedScene::draw()
     m_cubeShader.setUniformValue( "colorTexture", 0 );
 
 
-    obj->draw();
+    obj->draw( m_fxmanager );
   }
 
   glBindTexture( GL_TEXTURE_2D, 0 );
 
   m_cubeShader.release();
 
+//  fx::Lines* linesEffect = dynamic_cast< fx::Lines* >( m_fxmanager.getEffect( "line" ).get() );
+//  linesEffect->addLine( Vector3f(10,10,10), Vector3f(-10,-10,-10) );
+
   m_fxmanager.drawEffects( viewMatrix, projectionMatrix );
-
-//  glBlendFunc(GL_ONE, GL_ONE); // additive blending
-
-//  glDepthMask(GL_FALSE);
-
-//  glBindTexture( GL_TEXTURE_2D, m_textures.find( "line_gradient" ).value() );
-
-//  m_tmpShader.bind();
-
-//  m_tmpShader.setUniformValue( "projectionMatrix", projectionMatrix );
-//  m_tmpShader.setUniformValue( "viewMatrix", viewMatrix );
-//  m_tmpShader.setUniformValue( "radius", (float) 1.5 );
-//  m_tmpShader.setUniformValue( "gradientTexture", 0 );
-
-//  m_tmpMesh.drawSimple();
-
-//  m_tmpShader.release();
-
-//  glBindTexture( GL_TEXTURE_2D, 0 );
 
 
 
@@ -425,6 +382,21 @@ void SimulatedScene::keyPressEvent( QKeyEvent *e )
     msg.clientId = m_ID;
     msg.enginesEnabled = engineRunning;
     sendMessage( msg, m_tcpSocket );
+
+    if( engineRunning )
+    {
+      for( BlockRef engine : m_playerShip->getEngines() )
+      {
+        int idx = engine.generalIndex( m_playerShip->modelSize(), m_playerShip->getBlock( engine ).orientation );
+        m_playerShip->enginePower().insert( idx, 1.0 );
+      }
+
+    } else
+    {
+      for( BlockRef engine : m_playerShip->getEngines() )
+        m_playerShip->enginePower().insert(
+              engine.generalIndex( m_playerShip->modelSize(), m_playerShip->getBlock( engine ).orientation ), 0.0 );
+    }
   break;
 
   }

@@ -46,7 +46,7 @@ public:
 
   void optimize();
 
-  void draw() { m_mesh.drawIndexed(); }
+  void draw( spacefx::Manager& fxmanager );
   void attachShader( QGLShaderProgram& shader ){ m_mesh.attachShader( shader ); }
 
   Octree& getOctree() { return m_octree; }
