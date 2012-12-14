@@ -78,6 +78,22 @@ namespace messages
     }
   };
 
+  class MessageCannons
+  {
+  public:
+    qint32 clientId;
+
+  protected:
+    void serialize( QDataStream & stream )
+    {
+      stream << clientId;
+    }
+    void unserialize( QDataStream & stream )
+    {
+      stream >> clientId;
+    }
+  };
+
   // Подтверждаем соединение с сервера и высылаем ID клиенту
   class MessageAccept
   {

@@ -46,9 +46,18 @@ namespace spacefx
   };
 }
 
+Lines::Lines(  QString texName, float radius ):
+  m_vertexBuffer( QGLBuffer::VertexBuffer ),
+  m_verticesCount( 0 ),
+  m_data( 64 ),
+  m_texName( texName ),
+  m_radius( radius )
+{
+}
+
 void Lines::initialize( QGLWidget* widget )
 {
-  QImage lineImage( QString( SPACECRAFT_PATH ) + "/images/grad3.bmp" );
+  QImage lineImage( QString( SPACECRAFT_PATH ) + m_texName );
   m_texture = widget->bindTexture( lineImage );
 
   if ( !prepareShaderProgram( m_shader,
@@ -57,10 +66,6 @@ void Lines::initialize( QGLWidget* widget )
                               QString( SPACECRAFT_PATH ) + "/shaders/geometryLine.geom" ) )
     return;
 
-
-//  m_mesh.writePositions( linePositions, verticesCount );
-//  m_mesh.attachShader( m_shader );
-//  m_mesh.setMode( GL_LINES );
 
   m_vertexBuffer.create();
   m_vertexBuffer.setUsagePattern( QGLBuffer::StreamDraw );
@@ -94,7 +99,7 @@ void Lines::draw( QMatrix4x4& viewMatrix, QMatrix4x4& projectionMatrix )
 
   m_shader.setUniformValue( "projectionMatrix", projectionMatrix );
   m_shader.setUniformValue( "viewMatrix", viewMatrix );
-  m_shader.setUniformValue( "radius", (float) 1.2 );
+  m_shader.setUniformValue( "radius", m_radius );
   m_shader.setUniformValue( "gradientTexture", 0 );
 
   m_vertexBuffer.bind();

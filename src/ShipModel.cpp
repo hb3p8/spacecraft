@@ -7,17 +7,6 @@
 using namespace Eigen;
 using namespace std;
 
-const int numBlockTypes = 4;
-int blockSpecs[ numBlockTypes ][ 6 ] =
-{
-  { 0, 0, 0, 0, 0, 0 }, // hull
-  { 1, 1, 1, 1, 1, 1 }, // armor
-  { 2, 2, 2, 2, 2, 2 }, // power
-  { 3, 0, 0, 0, 0, 0 }  // engine
-};
-
-
-
 ShipModel::ShipModel( size_t size ): BaseSceneObject(), m_size( size )
 {
   int center = m_size / 2;
@@ -118,7 +107,6 @@ void ShipModel::buildMesh()
     // генерим меш
 
     memcpy( normals + vertCounter * 3, cubeNormals, cubeVerticesCount * 3 * sizeof( float ) );
-//    memcpy( texcoords + vertCounter * 2, cubeTexcoords, cubeVerticesCount * 2 * sizeof( float ) );
 
     Vector3f translation( 2.0 * i, 2.0 * j, 2.0 * k );
 
@@ -141,42 +129,13 @@ void ShipModel::buildMesh()
         float* color = colors + index * 3;
         float ao = 0.6f + 0.4f * ( 9 - occluders[ side ] ) / 9.;
         color[ 0 ] = color[ 1 ] = color[ 2 ] = ao;
-/*
-        int ori=block.orientation ;
-        if(ori==2)
-        {
-            cout<<1;
-        }*/
+
         side = rotateSide( side, block.orientation );
 
-        /*int fuck=ori;
-        cout<<fuck;
-*/
         int blockId = block.blockType - 1;
-        int subTexId = blockSpecs[ blockId ][ side ];
+        int subTexId = getBlockSpecs( blockId, side );
 
-
-        int idx = index % 4;
-        float* tex = texcoords + index * 2;
-        switch( idx )
-        {
-        case 0:
-          tex[ 0 ] = subTexId * itemSize;
-          tex[ 1 ] = 1;
-          break;
-        case 1:
-          tex[ 0 ] = itemSize + subTexId * itemSize;
-          tex[ 1 ] = 1;
-          break;
-        case 2:
-          tex[ 0 ] = itemSize + subTexId * itemSize;
-          tex[ 1 ] = 0.8;
-          break;
-        case 3:
-          tex[ 0 ] = subTexId * itemSize;
-          tex[ 1 ] = 0.8;
-          break;
-        }
+        setBlockTexcoords( index, subTexId, 5, itemSize, texcoords );
 
         idxCounter++;
       }
@@ -215,7 +174,7 @@ void ShipModel::refreshModel()
     buildMesh();
 
   calculateMassCenter();
-  findEngines();
+  findSpecials();
   m_inertiaCash.clear();
 }
 
@@ -286,7 +245,6 @@ void ShipModel::saveToFile( string fileName )
   for( BlockRef& block : blocks )
   {
     BlockData& blockData = getBlock( block.i, block.j, block.k );
-    assert( blockData.blockType < 5 ); //!
     outfile << block.i << "\t" << block.j << "\t" << block.k << "\t" <<
                blockData.blockType << "\t" << blockData.orientation << endl;
   }
@@ -339,7 +297,6 @@ void ShipModel::loadFromFile( string fileName, bool reallocateBlocks )
     infile >> blockOrient;
 
     getBlock( i, j, k ).blockType = blockType;
-    assert( blockType < 5 ); //!
     getBlock( i, j, k ).orientation = blockOrient;
   }
 
@@ -418,7 +375,6 @@ void ShipModel::draw( spacefx::Manager& fxmanager )
       Vector3d engineDir = (-1) * sideToNormald( side );
 
       Vector3d enginePos( engineBlockRef.position_double( 2. ) );
-//      Vector3f enginePos( engineBlockRef.position( 2. ) );
 
       linesEffect->addLine( (Vector3d)( m_rotation * ( enginePos - engineDir - m_massCenter ) + m_position ),
                             (Vector3d)( m_rotation * ( enginePos - engineDir*2 - m_massCenter) + m_position ) );
@@ -477,22 +433,27 @@ float ShipModel::getInertia( Vector3d axis, BlockRef engineBlock, int side )
   return inertia;
 }
 
-void ShipModel::findEngines()
+void ShipModel::findSpecials()
 {
   m_engines.clear();
+  m_cannons.clear();
 
   vector< BlockRef >& blocks = m_octree.getRoot()->blocks();
 
   for( BlockRef& block : blocks )
   {
-    if( getBlock( block ).blockType == 4 )
+    int blockType = getBlock( block ).blockType;
+    if( blockType == 4 )
       m_engines.push_back( block );
+
+    if( blockType == 5 )
+      m_cannons.push_back( block );
   }
 }
 
 void ShipModel::process( float deltaTime )
 {
-  // на дельтатайм умножаем на ворлдстеп до входа в эту функцию, на то он и ворлд)
+  // дельтатайм умножаем на ворлдстеп до входа в эту функцию, на то он и ворлд)
 
   for( BlockRef engineBlockRef : getEngines() )
   {
@@ -524,7 +485,6 @@ void ShipModel::process( float deltaTime )
   }
 
   m_position += m_velocity * deltaTime;
-  assert( m_velocity.x() != 1/0. && m_velocity.y() != 1/0. &&  m_velocity.z() != 1/0. );
 
   if( m_angularVelocity.norm() > 1e-5 )
     m_rotation = m_rotation *

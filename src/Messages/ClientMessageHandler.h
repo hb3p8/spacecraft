@@ -6,6 +6,7 @@
 #include <QDataStream>
 #include "../SimulatedScene.hpp"
 #include "../SimulatedSceneServer.hpp"
+#include "../Dynamics.hpp"
 
 namespace messages
 {
@@ -45,10 +46,22 @@ namespace messages
       assert( false );
     }
 
+    void handle( MessageWrapper<MessageCannons, MessageTypes> )
+    {
+      assert( false );
+    }
+
     void handle( MessageWrapper<MessageInitScene, MessageTypes> msg )
     {
       for( int i = 0; i < msg.modelIds.size(); i++ )
       {
+        BaseSceneObjectPtr constructed = space::DynamicsFabric::create( msg.modelNames[ i ] );
+        if( constructed )
+        {
+          constructed->setId( msg.modelIds[ i ] );
+          m_scene.m_sceneObjects.push_back( constructed );
+          continue;
+        }
         m_scene.addModelFromFile( msg.modelNames[ i ], msg.modelIds[ i ] );
         m_scene.m_sceneObjects.back()->refreshModel();
         m_scene.m_sceneObjects.back()->attachShader( m_scene.m_cubeShader );
@@ -90,6 +103,11 @@ namespace messages
     void handle( MessageWrapper<MessageEngines, MessageTypes> message )
     {
       m_server.enableEngines( message.clientId, message.enginesEnabled );
+    }
+
+    void handle( MessageWrapper<MessageCannons, MessageTypes> message )
+    {
+      m_server.fireCannons( message.clientId );
     }
 
     void handle( MessageWrapper<MessageInitScene, MessageTypes> )

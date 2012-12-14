@@ -25,7 +25,8 @@ EditorScene::EditorScene( QString modelFileName ) :
   m_isJumping( false ),
   m_justJumped( false ),
   m_blockToInsert( 1 ),
-  m_currentOrient( 0 )
+  m_currentOrient( 0 ),
+  m_gravity( true )
 {
   m_camera = CameraPtr( new Camera() );
 
@@ -173,22 +174,26 @@ void EditorScene::process( int newTime )
   applyInput();
 
   Vector3f downVec( 0.f, -1.f, 0.f );
-  m_shipModel.octreeRaycastIntersect( m_camera->position(), downVec, m_moveIntersect );
-  Vector3f toGround = downVec * m_moveIntersect.time;
-//  Vector3f point = m_camera->position() + toGround;
-  if( m_moveIntersect.intersected() )
+
+  if( m_gravity )
   {
-    float sqrDist = toGround.dot( toGround );
-    if( sqrDist > 9.0 + 0.1 ) m_velocity.y() += -0.10;
-    else if( sqrDist < 9.0 - 0.1 ) m_velocity.y() = 0.15;
-    else
+    m_shipModel.octreeRaycastIntersect( m_camera->position(), downVec, m_moveIntersect );
+    Vector3f toGround = downVec * m_moveIntersect.time;
+  //  Vector3f point = m_camera->position() + toGround;
+    if( m_moveIntersect.intersected() )
     {
-      if( m_justJumped )
-        m_justJumped = false;
+      float sqrDist = toGround.dot( toGround );
+      if( sqrDist > 9.0 + 0.1 ) m_velocity.y() += -0.10;
+      else if( sqrDist < 9.0 - 0.1 ) m_velocity.y() = 0.15;
       else
       {
-        m_isJumping = false;
-        m_velocity.y() = 0;
+        if( m_justJumped )
+          m_justJumped = false;
+        else
+        {
+          m_isJumping = false;
+          m_velocity.y() = 0;
+        }
       }
     }
   }
@@ -275,6 +280,8 @@ void EditorScene::viewportResize( int w, int h )
 void EditorScene::keyPressEvent( QKeyEvent *e )
 {
   static bool wireframeMode = false;
+  static int firstblock[3];
+  static int axis;
   switch ( e->key() )
   {
   case Qt::Key_Escape:
@@ -288,6 +295,11 @@ void EditorScene::keyPressEvent( QKeyEvent *e )
       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     wireframeMode = !wireframeMode;
     break;
+
+  case Qt::Key_G:
+    m_gravity = !m_gravity;
+    break;
+
   case Qt::Key_C:
     if( m_minIntersection.side != SIDE_NO_INTERSECTION )
     {
@@ -314,6 +326,90 @@ void EditorScene::keyPressEvent( QKeyEvent *e )
     }
     break;
 
+  case Qt::Key_K:
+    if( m_minIntersection.side != SIDE_NO_INTERSECTION )
+    {
+      firstblock[ 0 ] = m_minIntersection.i;
+      firstblock[ 1 ] = m_minIntersection.j;
+      firstblock[ 2 ] = m_minIntersection.k;
+      axis = m_minIntersection.side % 3;
+    }
+    break;
+
+  case Qt::Key_M:
+    if( m_minIntersection.side != SIDE_NO_INTERSECTION )
+    {
+      long secondblock[3] = { m_minIntersection.i, m_minIntersection.j, m_minIntersection.k };
+      int d[3];
+      for( int i = 0; i < 3; i++ )
+      {
+        d[ i ] = ( secondblock[ i ] - firstblock[ i ] ) > 0 ? 1 : -1;
+      }
+
+      for( int i = firstblock[ 0 ]; i != secondblock[ 0 ] + d[ 0 ]; i += d[ 0 ] )
+        for( int j = firstblock[ 1 ]; j != secondblock[ 1 ] + d[ 1 ]; j += d[ 1 ] )
+          for( int k = firstblock[ 2 ]; k != secondblock[ 2 ] + d[ 2 ]; k += d[ 2 ] )
+          {
+//            if( i == firstblock[ axis ] ) continue;
+            BlockData& block = m_shipModel.getBlock(
+                  i,
+                  j,
+                  k );
+            block.blockType = m_blockToInsert;
+          }
+      m_shipModel.refreshModel();
+
+    }
+    break;
+
+  case Qt::Key_P:
+    if( m_minIntersection.side != SIDE_NO_INTERSECTION )
+    {
+      long secondblock[3] = { m_minIntersection.i, m_minIntersection.j, m_minIntersection.k };
+      int d[3];
+      for( int i = 0; i < 3; i++ )
+      {
+        d[ i ] = ( secondblock[ i ] - firstblock[ i ] ) > 0 ? 1 : -1;
+      }
+
+      for( int i = firstblock[ 0 ]; i != secondblock[ 0 ] + d[ 0 ]; i += d[ 0 ] )
+        for( int j = firstblock[ 1 ]; j != secondblock[ 1 ] + d[ 1 ]; j += d[ 1 ] )
+          for( int k = firstblock[ 2 ]; k != secondblock[ 2 ] + d[ 2 ]; k += d[ 2 ] )
+          {
+//            if( i == firstblock[ axis ] ) continue;
+            BlockData& block = m_shipModel.getBlock(
+                  i,
+                  j,
+                  k );
+            block.blockType = 0;
+          }
+      m_shipModel.refreshModel();
+
+    }
+    break;
+
+  case Qt::Key_L:
+    if( m_minIntersection.side != SIDE_NO_INTERSECTION )
+    {
+      long secondblock[3] = { m_minIntersection.i, m_minIntersection.j, m_minIntersection.k };
+      int offset[3] = { firstblock[ 0 ], firstblock[ 1 ], firstblock[ 2 ] };
+      int d = ( secondblock[ axis ] - firstblock[ axis ] ) > 0 ? 1 : -1;
+      for( int i = firstblock[ axis ]; i != secondblock[ axis ]; i+=d )
+      {
+        if( i == firstblock[ axis ] ) continue;
+        offset[ axis ] = i;
+        BlockData& block = m_shipModel.getBlock(
+              offset[ 0 ],
+              offset[ 1 ],
+              offset[ 2 ] );
+        block.blockType = m_blockToInsert;
+//        block.orientation = directionSideTest( m_camera->view() );
+      }
+      m_shipModel.refreshModel();
+
+    }
+    break;
+
   case Qt::Key_1:
     m_blockToInsert = 1;
   break;
@@ -325,6 +421,9 @@ void EditorScene::keyPressEvent( QKeyEvent *e )
   break;
   case Qt::Key_4:
     m_blockToInsert = 4;
+  break;
+  case Qt::Key_5:
+    m_blockToInsert = 5;
   break;
 
   case Qt::Key_Plus:

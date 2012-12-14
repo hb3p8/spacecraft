@@ -98,6 +98,47 @@ int directionSideTest( Vector3f rayDir )
   return side;
 }
 
+int blockSpecs[][ 6 ] =
+{
+  { 0, 0, 0, 0, 0, 0 }, // hull
+  { 1, 1, 1, 1, 1, 1 }, // armor
+  { 2, 2, 2, 2, 2, 2 }, // power
+  { 3, 0, 0, 0, 0, 0 }, // engine
+  { 4, 0, 0, 0, 0, 0 }  // gun
+};
+
+int getBlockSpecs( int blockId, int side )
+{
+  return blockSpecs[ blockId ][ side ];
+}
+
+void setBlockTexcoords( int index, int subTexId, int size_x, float itemSize, float* texcoords )
+{
+  int idx = index % 4;
+  int subTexIdX = subTexId % size_x;
+  int subTexIdY = subTexId / size_x;
+  float* tex = texcoords + index * 2;
+  switch( idx )
+  {
+  case 0:
+    tex[ 0 ] = subTexIdX * itemSize;
+    tex[ 1 ] = 1 - subTexIdY * itemSize;
+    break;
+  case 1:
+    tex[ 0 ] = itemSize + subTexIdX * itemSize;
+    tex[ 1 ] = 1 - subTexIdY * itemSize;
+    break;
+  case 2:
+    tex[ 0 ] = itemSize + subTexIdX * itemSize;
+    tex[ 1 ] = 1 - ( subTexIdY + 1 ) * itemSize;
+    break;
+  case 3:
+    tex[ 0 ] = subTexIdX * itemSize;
+    tex[ 1 ] = 1 - ( subTexIdY + 1 ) * itemSize;
+    break;
+  }
+}
+
 /*
  * int rotateSide( int side, int orient )
  *

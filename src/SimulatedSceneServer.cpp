@@ -17,6 +17,8 @@
 #include "Messages/MessageWrapper.h"
 #include "Messages/ClientMessageHandler.h"
 
+#include "Dynamics.hpp"
+
 using namespace Eigen;
 using namespace std;
 
@@ -31,6 +33,7 @@ void ClientData::newMessage()
 }
 
 
+
 SimulatedSceneServer::SimulatedSceneServer() :
   m_timer( new QTimer( this ) ),
   m_workTime( new QTime() ),
@@ -40,7 +43,7 @@ SimulatedSceneServer::SimulatedSceneServer() :
 {
 
   m_timer = new QTimer( this );
-  m_timer->start( 10 );
+  m_timer->start( 20 );
   connect( m_timer, SIGNAL( timeout() ), this, SLOT( work() ) );
 
   m_workTime->start();
@@ -64,6 +67,13 @@ SimulatedSceneServer::SimulatedSceneServer() :
                ).toStdString() << std::flush;
 
   m_handler = new mes::ServerHandler<mes::MessageTypes>( *this );
+
+//  BaseSceneObjectPtr beam = space::DynamicsFabric::create( "beam" );
+//  beam->m_velocity = Vector3d( 0, 0.1, 0 );
+//  beam->m_rotation = AngleAxisd( 1.57, Vector3d( 0, 0, 1 ) );
+
+//  m_sceneObjects.push_back( beam );
+//  m_sceneObjectNames.push_back( "beam" );
 }
 
 void SimulatedSceneServer::work()
@@ -125,17 +135,10 @@ SimulatedSceneServer::~SimulatedSceneServer()
 
 void SimulatedSceneServer::process( int newTime )
 {
-//  std::cout << "process: " << newTime << std::endl << std::flush;
   int deltaTime = newTime - m_lastTime;
   m_lastTime = newTime;
 
   float delta = deltaTime * m_worldTimeRatio;
-
-//  m_velocity *= 0.7;
-
-//  applyInput();
-
-//  m_camera->translate( m_velocity * delta );
 
   mes::MessageWrapper<mes::MessageSnapshot, mes::MessageTypes> msg;
 
@@ -241,6 +244,47 @@ void SimulatedSceneServer::enableEngines( int id, bool enabled )
 
   }
 
+}
+
+void SimulatedSceneServer::fireCannons( int clientId )
+{
+  ClientMap::iterator i;
+
+  i = m_clients.find( clientId );
+  if( i != m_clients.end() )
+  {
+    ClientData* data = i.value();
+
+    ShipModel& shipModel = *data->model;
+    BlockRefArray& cannons = shipModel.getCannons();
+
+    mes::MessageWrapper<mes::MessageInitScene, mes::MessageTypes> newShotsMsg;
+
+    for( BlockRef cannonBlockRef: cannons )
+    {
+      int side = 0;
+      side = rotateSide( side, shipModel.getBlock( cannonBlockRef ).orientation );
+
+      Vector3d cannonDir = sideToNormald( side );
+
+      BaseSceneObjectPtr beam = space::DynamicsFabric::create( "beam" );
+      beam->m_position = cannonBlockRef.position_double( 2. ) - shipModel.getMassCenter();
+      beam->m_velocity = cannonDir;
+
+      m_sceneObjects.push_back( beam );
+      m_sceneObjectNames.push_back( "beam" );
+      newShotsMsg.modelNames.push_back( "beam" );
+      newShotsMsg.modelIds.push_back( beam->m_id );
+
+    }
+
+    // Отсылаем всем клиентам новые выстрелы
+    for( ClientData* client: m_clients )
+    {
+      mes::sendMessage( newShotsMsg, client->connection );
+    }
+
+  }
 }
 
 void SimulatedSceneServer::getModel( int id, std::string modelName )

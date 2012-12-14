@@ -69,6 +69,7 @@ private:
     int m_blockToInsert;
     int m_currentOrient;
     QMap<std::string, GLuint> m_textures;
+    bool m_gravity;
 
 };
 

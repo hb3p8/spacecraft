@@ -66,6 +66,8 @@ public:
     QString getServerAddres();
     int getServerPort();
 
+    void fireCannons( int clientId );
+
 public slots:
     void registerClient();
     void getModel( int id, std::string modelName );

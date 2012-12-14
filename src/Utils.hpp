@@ -35,6 +35,8 @@ struct BlockRef
     { return Eigen::Vector3d( blockSize * i, blockSize * j, blockSize * k ); }
 };
 
+typedef std::vector< BlockRef > BlockRefArray;
+
 inline QVector3D eigenVectorToQt( Eigen::Vector3f v ) { return QVector3D( v.x(), v.y(), v.z() ); }
 inline QVector3D eigenVectorToQt( Eigen::Vector3d v ) { return QVector3D( v.x(), v.y(), v.z() ); }
 
@@ -61,15 +63,7 @@ bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShade
 bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShaderPath,
                            const QString& fragmentShaderPath, const QString& geometryShaderPath );
 
-struct UpdateStruct
-{
-  Eigen::Vector3d position;
-  Eigen::Vector3d velocity;
-
-  Eigen::AngleAxisd rotation;
-  Eigen::Vector3d angularVelocity;
-
-  Eigen::Vector3d massCenter;
-};
+int getBlockSpecs( int blockId, int side );
+void setBlockTexcoords( int index, int subTexId, int size_x, float itemSize, float* texcoords );
 
 #endif // UTILS_HPP

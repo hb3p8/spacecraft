@@ -9,10 +9,11 @@ namespace messages
     typedef types::Cons<MessageSnapshot,
             types::Cons<MessageEngines,
             types::Cons<MessageAccept,
+            types::Cons<MessageCannons,
             types::Cons<MessageInitModel,
             types::Cons<MessageInitScene,
             types::Cons<MessageAcceptInit
-            > > > > > >
+            > > > > > > >
 
             MessageTypes;
 }

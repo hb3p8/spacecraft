@@ -25,7 +25,6 @@ class ShipModel: public BaseSceneObject
 {
 
 public:
-  typedef std::vector< BlockRef > BlockRefArray;
   typedef QMap< int, double > InertiaCash;
   typedef QMap< int, float > EngineFloatMap;
 
@@ -58,8 +57,10 @@ public:
   float getMass(){ return m_mass; }
   float getInertia( Eigen::Vector3d axis, BlockRef block, int side );
 
-  void findEngines();
+  void findSpecials();
+
   BlockRefArray& getEngines() { return m_engines; }
+  BlockRefArray& getCannons() { return m_cannons; }
   EngineFloatMap& enginePower() { return m_enginePower; }
 
   size_t modelSize() { return m_size; }
@@ -88,6 +89,8 @@ private:
   InertiaCash m_inertiaCash;
 
   EngineFloatMap m_enginePower;
+
+  BlockRefArray m_cannons;
 
   bool m_noGraphics;
 

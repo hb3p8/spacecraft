@@ -20,9 +20,10 @@
 
 #include "Messages/ClientMessageHandler.h"
 
+#include "Dynamics.hpp"
+
 using namespace Eigen;
 using namespace std;
-//using namespace messages;
 
 
 SimulatedScene::SimulatedScene() :
@@ -164,9 +165,14 @@ void SimulatedScene::initialize()
 {
     assert( m_widget );
 
-    fx::Lines* lineEffect = new fx::Lines();
+    fx::Lines* lineEffect = new fx::Lines( "/images/grad3.bmp", 1.2 );
     lineEffect->initialize( m_widget );
     m_fxmanager.registerEffect( "line", fx::EffectTypePtr( lineEffect ) );
+
+    lineEffect = new fx::Lines( "/images/grad2.bmp", 1.0 );
+    lineEffect->initialize( m_widget );
+    m_fxmanager.registerEffect( "beam", fx::EffectTypePtr( lineEffect ) );
+
 
     if ( !prepareShaderProgram( m_cubeShader,
                                 QString( SPACECRAFT_PATH ) + "/shaders/blockMaterial.vert",
@@ -198,6 +204,7 @@ void SimulatedScene::initialize()
       obj->refreshModel();
       obj->attachShader( m_cubeShader );
     }
+
 
     StarBuilder stars;
     stars.buildStarMesh();
@@ -370,10 +377,12 @@ void SimulatedScene::keyPressEvent( QKeyEvent *e )
       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     wireframeMode = !wireframeMode;
   break;
-/*
-  case Qt::Key_M:
-    m_camera->setPosition( m_shipModel.getMassCenter() );
-  break;*/
+
+  case Qt::Key_B:
+    mes::MessageWrapper<mes::MessageCannons, mes::MessageTypes> blast_msg;
+    blast_msg.clientId = m_ID;
+    sendMessage( blast_msg, m_tcpSocket );
+  break;
 
   case Qt::Key_E:
     engineRunning = !engineRunning;

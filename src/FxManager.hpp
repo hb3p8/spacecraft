@@ -25,11 +25,7 @@ namespace spacefx
   class Lines : public EffectType
   {
   public:
-    Lines(): m_vertexBuffer( QGLBuffer::VertexBuffer ),
-      m_verticesCount( 0 ),
-//      m_maxVerticesCount( 512 ),
-      m_data( 64 )
-    {}
+    Lines( QString texName, float radius = 1.0 );
 
     void initialize( QGLWidget* widget );
 
@@ -44,9 +40,9 @@ namespace spacefx
     GLuint m_texture;
     QGLBuffer m_vertexBuffer;
     size_t m_verticesCount;
-//    size_t m_maxVerticesCount;
     std::vector<Eigen::Vector3f> m_data;
-
+    QString m_texName;
+    float m_radius;
   };
 
   class Sprites : public EffectType
