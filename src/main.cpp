@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
         return 0;
       }
 
-      if( argument == "--serv" )
+      if( argument == "--server" )
       {
         SimulatedSceneServer* server = new SimulatedSceneServer();
 

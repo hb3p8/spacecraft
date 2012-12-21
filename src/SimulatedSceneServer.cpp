@@ -19,6 +19,10 @@
 
 #include "Dynamics.hpp"
 
+#include <ctime>
+#include <ostream>
+#include <stdint.h>
+
 using namespace Eigen;
 using namespace std;
 
@@ -43,7 +47,7 @@ SimulatedSceneServer::SimulatedSceneServer() :
 {
 
   m_timer = new QTimer( this );
-  m_timer->start( 20 );
+  m_timer->start( 60 );
   connect( m_timer, SIGNAL( timeout() ), this, SLOT( work() ) );
 
   m_workTime->start();
@@ -136,11 +140,17 @@ SimulatedSceneServer::~SimulatedSceneServer()
 void SimulatedSceneServer::process( int newTime )
 {
   int deltaTime = newTime - m_lastTime;
+  //  m_mesh.drawSimple();
   m_lastTime = newTime;
 
   float delta = deltaTime * m_worldTimeRatio;
 
   mes::MessageWrapper<mes::MessageSnapshot, mes::MessageTypes> msg;
+
+//  timespec spec;
+
+//  clock_gettime( CLOCK_MONOTONIC, &spec );
+//  long start = spec.tv_nsec;
 
   for( BaseSceneObjectPtr obj: m_sceneObjects )
   {
@@ -155,11 +165,15 @@ void SimulatedSceneServer::process( int newTime )
     msg.massCenteres.push_back( eigenVectorToQt( obj->m_massCenter ) );
   }
 
+//    clock_gettime( CLOCK_MONOTONIC, &spec );
+
   // отсылаем состояния всех объектов на клиенты
   for( ClientData* client: m_clients )
   {
     mes::sendMessage( msg, client->connection );
-  }
+  }  
+
+//  std::cout << ( spec.tv_nsec - start ) / 1000 << std::flush;
 
 }
 
@@ -268,8 +282,8 @@ void SimulatedSceneServer::fireCannons( int clientId )
       Vector3d cannonDir = sideToNormald( side );
 
       BaseSceneObjectPtr beam = space::DynamicsFabric::create( "beam" );
-      beam->m_position = cannonBlockRef.position_double( 2. ) - shipModel.getMassCenter();
-      beam->m_velocity = cannonDir;
+      beam->m_position = shipModel.m_rotation * ( cannonBlockRef.position_double( 2. ) - shipModel.getMassCenter() ) + shipModel.m_position;
+      beam->m_velocity = shipModel.m_rotation * cannonDir + shipModel.m_velocity;
 
       m_sceneObjects.push_back( beam );
       m_sceneObjectNames.push_back( "beam" );

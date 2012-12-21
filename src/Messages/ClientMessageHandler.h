@@ -18,6 +18,7 @@ namespace messages
 
     void handle( MessageWrapper<MessageSnapshot, MessageTypes> msg )
     {
+//      std::cout << "c" << std::flush;
       m_scene.handleDataUpdate( &msg );
     }
 

@@ -129,7 +129,18 @@ void Lines::addLine( Eigen::Vector3d p1, Eigen::Vector3d p2 )
 void Lines::addLine( Eigen::Vector3f p1, Eigen::Vector3f p2 )
 {
   if( m_verticesCount + 2 >= m_data.size() )
+  {
     m_data.resize( m_data.size() * 2 );
+
+    if ( !m_vertexBuffer.bind() )
+    {
+        qWarning() << "Could not bind vertex buffer to the context";
+        return;
+    }
+    m_vertexBuffer.allocate( m_data.data(), m_data.size() * 3 * sizeof( float ) );
+
+    m_vertexBuffer.release();
+  }
 
   m_data[ m_verticesCount ] = p1; m_verticesCount++;
   m_data[ m_verticesCount ] = p2; m_verticesCount++;

@@ -38,7 +38,7 @@ void GLRenderWidget::initializeGL()
     glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 
     m_timer = new QTimer( this );
-    m_timer->start( 10 );
+    m_timer->start( 0 );
     connect( m_timer, SIGNAL( timeout() ), this, SLOT( updateGL() ) );
 
     m_fpsTime->start();
