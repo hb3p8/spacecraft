@@ -123,7 +123,7 @@ macro( make_qt_project )
   include_directories( ${${PROJECT_NAME}_PREREQUESTS_INCLUDE_DIR} )
 
   add_executable( ${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES} )
-  target_link_libraries( ${PROJECT_NAME} ${${PROJECT_NAME}_PREREQUESTS_LIBRARIES} libGL.so ) #TODO: разобраться
+  target_link_libraries( ${PROJECT_NAME} ${${PROJECT_NAME}_PREREQUESTS_LIBRARIES} libGL.so -lMyGUI.OpenGLPlatform ) #TODO: разобраться
 
   copy_binary( ${PROJECT_NAME} )
 

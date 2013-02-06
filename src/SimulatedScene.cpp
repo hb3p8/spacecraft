@@ -6,6 +6,7 @@
 #include <QMatrix>
 #include <QImage>
 #include <QFile>
+#include <QtNetwork>
 
 #include "Utils.hpp"
 #include "GLRenderWidget.hpp"
@@ -16,7 +17,8 @@
 #include <iostream>
 #include <fstream>
 
-#include <QtNetwork>
+#include <MyGUI.h>
+#include "InputConverter.h"
 
 #include "Messages/ClientMessageHandler.h"
 
@@ -158,12 +160,31 @@ void SimulatedScene::handleDataUpdate( mes::MessageSnapshot* msg )
 
 SimulatedScene::~SimulatedScene()
 {
+  m_guiManager.destroyGui();
+
   delete m_handler;
 }
 
 void SimulatedScene::initialize()
 {
     assert( m_widget );
+
+    m_guiManager.createGui();
+    m_guiManager.addResourceLocation(m_guiManager.getRootMedia() + "/Common/Base");
+    m_guiManager.addResourceLocation(m_guiManager.getRootMedia() + "/Demos/Demo_Console");
+    m_guiManager.addResourceLocation(m_guiManager.getRootMedia() + "/Common/Demos");
+    m_guiManager.addResourceLocation(m_guiManager.getRootMedia() + "/Demos/Demo_Gui");
+
+    MyGUI::LayoutManager::getInstance().loadLayout("EditorWindow.layout");
+    const MyGUI::VectorWidgetPtr& wroot = MyGUI::LayoutManager::getInstance().loadLayout("HelpPanel.layout");
+    wroot.at(0)->findWidget("Text")->castType<MyGUI::TextBox>()->setCaption("Write commands in console to change some widget parameters. For example \"colour 1 0 0 1\" changes text colour to red.");
+
+    auto edit = MyGUI::Gui::getInstance().createWidget<MyGUI::EditBox>("EditBoxStretch", MyGUI::IntCoord(10, 80, 100, 100), MyGUI::Align::Default, "Overlapped");
+    edit->setCaption("some edit");
+    edit->setTextAlign(MyGUI::Align::Center);
+    edit->setEditMultiLine(true);
+
+
 
     fx::Lines* lineEffect = new fx::Lines( "/images/grad3.bmp", 1.2 );
     lineEffect->initialize( m_widget );
@@ -292,6 +313,7 @@ void SimulatedScene::draw()
 
   m_fxmanager.drawEffects( viewMatrix, projectionMatrix );
 
+  m_guiManager.onRender();
 
 
   m_text.add( "fps\t", dynamic_cast< GLRenderWidget* >( m_widget )->getFPS() );
@@ -360,11 +382,20 @@ void SimulatedScene::viewportResize( int w, int h )
 {
   m_camera->viewportResize( w, qMax( h, 1 ) );
   projectionMatrix = m_camera->projectionMatrix();
+  m_guiManager.onReshape( w, h );
 }
 
 void SimulatedScene::keyPressEvent( QKeyEvent *e )
 {
   static bool wireframeMode = false;
+
+//  int scan_code = input::VirtualKeyToScanCode( e->nativeVirtualKey() );
+//  int text = VirtualKeyToText( e->nativeVirtualKey() );
+
+//  int mgkey = MyGUI::KeyCode::Enum(scan_code);
+
+//  m_guiManager.onKeyPress( MyGUI::KeyCode::Enum(scan_code), 0 );
+
   switch ( e->key() )
   {
   case Qt::Key_Escape:
@@ -420,10 +451,20 @@ void SimulatedScene::wheelEvent( QWheelEvent* event )
 void SimulatedScene::mousePressEvent( QMouseEvent* event )
 {
   m_lastMousePos = event->pos();
+  if( Qt::LeftButton == event->button() )
+    m_guiManager.onMousePress(event->pos().x(), event->pos().y(), MyGUI::MouseButton::Left );
+}
+
+void SimulatedScene::mouseReleaseEvent( QMouseEvent* event )
+{
+  if( Qt::LeftButton == event->button() )
+    m_guiManager.onMouseRelease(event->pos().x(), event->pos().y(), MyGUI::MouseButton::Left );
 }
 
 void SimulatedScene::mouseMoveEvent( QMouseEvent* event )
 {
+  m_guiManager.onMouseMove( event->pos().x(), event->pos().y() );
+
   GLfloat dx = static_cast< GLfloat >( event->pos().x() - m_lastMousePos.x() ) / m_widget->width () / 2 * M_PI;
   GLfloat dy = static_cast< GLfloat >( event->pos().y() - m_lastMousePos.y() ) / m_widget->height() / 2 * M_PI;
 

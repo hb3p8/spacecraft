@@ -66,4 +66,63 @@ bool prepareShaderProgram( QGLShaderProgram& program, const QString& vertexShade
 int getBlockSpecs( int blockId, int side );
 void setBlockTexcoords( int index, int subTexId, int size_x, float itemSize, float* texcoords );
 
+
+
+
+#include <QtGlobal>
+
+namespace space
+{
+
+template <class T>
+class Singleton
+{
+public:
+
+    // the singleton must be constructed with a reference to the controlled object
+    //----------------------------------------------------------------------
+    Singleton(T& rObject)
+    {
+        Q_ASSERT_X(!s_pInstance, "constructor", "Only one instance of this class is permitted.");
+        s_pInstance = &rObject;
+    }
+
+    // the singleton accessor
+    //----------------------------------------------------------------------
+    ~Singleton()
+    {
+        Q_ASSERT_X(s_pInstance, "destructor", "The singleton instance is invalid.");
+        s_pInstance = 0;
+    }
+
+    // the singleton accessor
+    //----------------------------------------------------------------------
+    static T& instance()
+    {
+        Q_ASSERT_X(s_pInstance, "instancing", "The singleton has not yet been created.");
+        return (*s_pInstance);
+    }
+
+    static bool initialised()
+    {
+      return s_pInstance;
+    }
+
+private:
+    // Data...
+    //----------------------------------------------------------------------
+    static T* s_pInstance;
+
+    // Nonexistant Functions...
+    //----------------------------------------------------------------------
+    Singleton(const Singleton& Src);
+    Singleton& operator=(const Singleton& Src);
+
+};
+template <class T> T* Singleton<T>::s_pInstance = 0;
+
+}
+
+
+
 #endif // UTILS_HPP

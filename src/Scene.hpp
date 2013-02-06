@@ -28,10 +28,12 @@ public:
     InputMap& getInputMap() { return m_inputMap; }
     void setWidget( QGLWidget* widget ){ m_widget = widget; }
 
-    virtual void keyPressEvent( QKeyEvent* e ) = 0;
-    virtual void mouseMoveEvent( QMouseEvent* e ) = 0;
-    virtual void mousePressEvent( QMouseEvent* e ) = 0;
-    virtual void wheelEvent( QWheelEvent* e ) = 0;
+    virtual void keyPressEvent( QKeyEvent* e ) {}
+    virtual void keyReleaseEvent( QKeyEvent* e ) {}
+    virtual void mouseMoveEvent( QMouseEvent* e ) {}
+    virtual void mousePressEvent( QMouseEvent* e ) {}
+    virtual void mouseReleaseEvent( QMouseEvent* e ) {}
+    virtual void wheelEvent( QWheelEvent* e ) {}
 
 protected:
 

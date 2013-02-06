@@ -7,7 +7,6 @@
 
 using namespace Eigen;
 
-
 GLRenderWidget::GLRenderWidget( const QGLFormat& format, ScenePtr scene, QWidget* parent ) :
     QGLWidget( format, parent ),
     m_timer( new QTimer( this ) ),
@@ -19,8 +18,7 @@ GLRenderWidget::GLRenderWidget( const QGLFormat& format, ScenePtr scene, QWidget
     m_scene( scene )
 {
   setMinimumSize( defaultXSize, defaultYSize );
-
-//  m_scene = EditorScenePtr( new EditorScene( this, NULL, modelFileName ) );
+  setMouseTracking( true );
 }
 
 GLRenderWidget::~GLRenderWidget()
@@ -84,6 +82,7 @@ void GLRenderWidget::keyPressEvent( QKeyEvent* e )
 void GLRenderWidget::keyReleaseEvent( QKeyEvent* e )
 {
   m_scene->getInputMap().insert( e->key(), false );
+  m_scene->keyReleaseEvent( e );
   QGLWidget::keyReleaseEvent( e );
 }
 
@@ -95,6 +94,11 @@ void GLRenderWidget::wheelEvent( QWheelEvent* event )
 void GLRenderWidget::mousePressEvent( QMouseEvent* event )
 {
   m_scene->mousePressEvent( event );
+}
+
+void GLRenderWidget::mouseReleaseEvent( QMouseEvent* event )
+{
+  m_scene->mouseReleaseEvent( event );
 }
 
 void GLRenderWidget::mouseMoveEvent( QMouseEvent* event )

@@ -1,7 +1,7 @@
 project( Game )
 
 set( Game_QT_LIBRARIES QtOpenGL QtNetwork )
-find_prerequests( Game REQUIRED Qt4 Eigen )
+find_prerequests( Game REQUIRED Qt4 Eigen MyGui MyGui.Opengl )
 
 configure_project()
 

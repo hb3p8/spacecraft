@@ -20,9 +20,11 @@
 #include "Messages/Dispatcher.h"
 
 #include "FxManager.hpp"
+#include "GUIManager.hpp"
 
 namespace fx = spacefx;
 namespace mes = messages;
+namespace gui = space::gui;
 
 QT_BEGIN_NAMESPACE
   class QTcpSocket;
@@ -57,6 +59,7 @@ public:
     virtual void keyPressEvent( QKeyEvent* e );
     virtual void mouseMoveEvent( QMouseEvent* e );
     virtual void mousePressEvent( QMouseEvent* e );
+    virtual void mouseReleaseEvent( QMouseEvent* e );
     virtual void wheelEvent( QWheelEvent* e );
 
     bool addModelFromFile( QString modelFileName, int modelId = -1 );
@@ -108,6 +111,7 @@ private:
     int m_ID;
 
     fx::Manager m_fxmanager;
+    gui::GUIManager m_guiManager;
 
 };
 
